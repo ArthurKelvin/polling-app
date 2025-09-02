@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
+import { createPollAction } from './actions';
 
 export default function CreatePollPage() {
   return (
@@ -31,11 +32,13 @@ export default function CreatePollPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            <form action={createPollAction} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">Poll Title</Label>
               <Input 
                 id="title" 
                 placeholder="Enter your poll question or title"
+                name="title"
                 className="w-full"
               />
             </div>
@@ -55,6 +58,7 @@ export default function CreatePollPage() {
               <Input 
                 id="option1" 
                 placeholder="First choice"
+                name="option1"
                 className="w-full"
               />
             </div>
@@ -64,6 +68,7 @@ export default function CreatePollPage() {
               <Input 
                 id="option2" 
                 placeholder="Second choice"
+                name="option2"
                 className="w-full"
               />
             </div>
@@ -73,6 +78,7 @@ export default function CreatePollPage() {
               <Input 
                 id="option3" 
                 placeholder="Third choice"
+                name="option3"
                 className="w-full"
               />
             </div>
@@ -82,15 +88,17 @@ export default function CreatePollPage() {
               <Input 
                 id="option4" 
                 placeholder="Fourth choice"
+                name="option4"
                 className="w-full"
               />
             </div>
 
             <div className="pt-4">
-              <Button className="w-full">
+              <Button type="submit" className="w-full">
                 Create Poll
               </Button>
             </div>
+            </form>
           </CardContent>
         </Card>
       </div>

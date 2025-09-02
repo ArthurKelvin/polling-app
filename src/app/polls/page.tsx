@@ -3,10 +3,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function PollsPage() {
+  const searchParams = useSearchParams();
+  const created = searchParams.get('created') === '1';
   return (
     <div className="container mx-auto px-4 py-8">
+      {created && (
+        <div className="mb-6 rounded-md border border-green-300 bg-green-50 p-4 text-green-800">
+          Poll created successfully.
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Polls Dashboard</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
