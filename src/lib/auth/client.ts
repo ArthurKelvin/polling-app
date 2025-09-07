@@ -25,7 +25,7 @@ export function getSupabaseBrowserClient(): SupabaseClient {
           .find((row) => row.startsWith(`${name}=`));
         return match ? decodeURIComponent(match.split("=")[1]) : undefined;
       },
-      set(name: string, value: string, options: any = {}) {
+      set(name: string, value: string, options: Record<string, unknown> = {}) {
         if (typeof document === "undefined") return;
         const {
           path = "/",
@@ -39,14 +39,14 @@ export function getSupabaseBrowserClient(): SupabaseClient {
         if (domain) cookie += `; Domain=${domain}`;
         if (typeof maxAge === "number") cookie += `; Max-Age=${maxAge}`;
         if (expires) {
-          const exp = typeof expires === "string" ? expires : expires.toUTCString?.();
+          const exp = typeof expires === "string" ? expires : (expires as Date).toUTCString?.();
           if (exp) cookie += `; Expires=${exp}`;
         }
         if (sameSite) cookie += `; SameSite=${sameSite}`;
         if (secure) cookie += `; Secure`;
         document.cookie = cookie;
       },
-      remove(name: string, options: any = {}) {
+      remove(name: string, options: Record<string, unknown> = {}) {
         if (typeof document === "undefined") return;
         const { path = "/", domain } = options || {};
         let cookie = `${name}=; Path=${path}; Max-Age=0`;

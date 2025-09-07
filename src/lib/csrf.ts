@@ -6,7 +6,7 @@ const CSRF_TOKEN_HEADER = 'x-csrf-token';
 
 export async function generateCSRFToken(): Promise<string> {
   const token = randomBytes(32).toString('hex');
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   
   cookieStore.set(CSRF_TOKEN_COOKIE, token, {
     httpOnly: true,
@@ -19,7 +19,7 @@ export async function generateCSRFToken(): Promise<string> {
 }
 
 export async function validateCSRFToken(token: string): Promise<boolean> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const storedToken = cookieStore.get(CSRF_TOKEN_COOKIE)?.value;
   
   if (!storedToken || !token) {

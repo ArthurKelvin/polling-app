@@ -6,7 +6,7 @@ import { deletePollAction } from './actions';
 import { redirect } from 'next/navigation';
 
 export default async function PollsListPage() {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

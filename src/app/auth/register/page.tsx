@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const { signUpWithPassword, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,6 +51,14 @@ export default function RegisterPage() {
         Have an account? <Link href="/auth/login" className="underline">Sign in</Link>
       </p>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }
 

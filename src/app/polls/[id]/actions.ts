@@ -5,8 +5,13 @@ import { getSupabaseServerClient } from "@/lib/auth/server";
 import { validateVoteInput, checkRateLimit } from "@/lib/validation";
 import { validateCSRFToken } from "@/lib/csrf";
 
-// Custom error types for better error handling
-export class VoteError extends Error {
+/**
+ * Custom error class for vote-related errors
+ * 
+ * Provides structured error handling with specific error codes
+ * for better error categorization and user experience
+ */
+class VoteError extends Error {
   constructor(
     message: string,
     public readonly code: 'AUTH_REQUIRED' | 'INVALID_INPUT' | 'VOTE_FAILED' | 'RATE_LIMITED' | 'UNKNOWN_ERROR',
@@ -17,8 +22,16 @@ export class VoteError extends Error {
   }
 }
 
-// Authentication helper
-async function ensureAuthenticated(supabase: ReturnType<typeof getSupabaseServerClient>) {
+/**
+ * Authentication helper function
+ * 
+ * Verifies that the current user is authenticated and returns user data
+ * 
+ * @param supabase - Supabase client instance
+ * @returns Promise resolving to authenticated user object
+ * @throws VoteError with AUTH_REQUIRED code if authentication fails
+ */
+async function ensureAuthenticated(supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>) {
   const { data: { user }, error } = await supabase.auth.getUser();
   
   if (error) {
@@ -32,9 +45,20 @@ async function ensureAuthenticated(supabase: ReturnType<typeof getSupabaseServer
   return user;
 }
 
-// Vote execution helper
+/**
+ * Vote execution helper function
+ * 
+ * Executes the actual vote using the database cast_vote function
+ * This function handles the database transaction and error logging
+ * 
+ * @param supabase - Supabase client instance
+ * @param pollId - UUID of the poll being voted on
+ * @param optionId - UUID of the selected option
+ * @returns Promise that resolves when vote is successfully cast
+ * @throws VoteError with VOTE_FAILED code if database operation fails
+ */
 async function executeVote(
-  supabase: ReturnType<typeof getSupabaseServerClient>,
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
   pollId: string,
   optionId: string
 ): Promise<void> {
@@ -44,7 +68,8 @@ async function executeVote(
   });
 
   if (error) {
-    // Log the error for debugging
+    // Log detailed error information for debugging
+    // This helps identify issues without exposing sensitive data to users
     console.error('Database vote error:', {
       pollId,
       optionId,
@@ -62,31 +87,52 @@ async function executeVote(
   }
 }
 
-// Main vote action with improved error handling and validation
+/**
+ * Main vote action with comprehensive security and validation
+ * 
+ * Handles the complete voting process with multiple security layers:
+ * - CSRF token validation (optional for backward compatibility)
+ * - Input validation using Zod schemas
+ * - User authentication verification
+ * - Rate limiting to prevent abuse
+ * - Database vote execution with error handling
+ * 
+ * @param pollId - UUID of the poll being voted on
+ * @param optionId - UUID of the selected option
+ * @param csrfToken - Optional CSRF token for additional security
+ * @throws VoteError with specific error codes for different failure scenarios
+ * @redirects to poll page with success/error indicators
+ */
 export async function voteAction(pollId: string, optionId: string, csrfToken?: string) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   try {
     // Step 1: Validate CSRF token if provided (optional for backward compatibility)
+    // CSRF protection prevents cross-site request forgery attacks
     if (csrfToken && !(await validateCSRFToken(csrfToken))) {
       throw new VoteError('Invalid CSRF token', 'INVALID_INPUT', pollId);
     }
     
     // Step 2: Validate input using zod schema
+    // Ensures pollId and optionId are valid UUIDs
     validateVoteInput(pollId, optionId);
     
     // Step 3: Ensure user is authenticated
+    // Only authenticated users can vote
     const user = await ensureAuthenticated(supabase);
     
     // Step 4: Check rate limiting
+    // Prevents abuse by limiting votes to 5 per minute per user
     if (!checkRateLimit(user.id, 'vote')) {
       throw new VoteError('Too many votes. Please wait before voting again.', 'RATE_LIMITED', pollId);
     }
     
     // Step 5: Execute the vote
+    // Uses database function with built-in validation and constraints
     await executeVote(supabase, pollId, optionId);
     
     // Step 6: Redirect on success
+    // Show success message to user
     redirect(`/polls/${pollId}?voted=1`);
     
   } catch (error) {

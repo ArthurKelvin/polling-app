@@ -15,7 +15,7 @@ export default async function PollDetailPage({ params, searchParams }: PageProps
   const hasVoted = searchParams.voted === '1';
   const error = searchParams.error;
 
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
 
   // Check if user is authenticated (optional for public polls)
   const { data: { user } } = await supabase.auth.getUser();

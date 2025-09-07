@@ -2,8 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { voteAction } from "./actions";
-
+import { voteAction } from "./actions"
 type Option = {
   id: string;
   label: string;
@@ -53,7 +52,7 @@ export function VoteForm({ pollId, options }: VoteFormProps) {
       setVoteState('error');
       setErrorMessage(error instanceof Error ? error.message : "Failed to submit vote");
     }
-  }, [selectedOption, pollId, voteState]);
+  }, [selectedOption, pollId, voteState, csrfToken]);
 
   // Memoize option change handler
   const handleOptionChange = useCallback((optionId: string) => {

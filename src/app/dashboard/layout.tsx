@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/auth/server";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = getSupabaseServerClient();
+  const supabase = await getSupabaseServerClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
