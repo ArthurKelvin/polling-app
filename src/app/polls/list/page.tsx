@@ -3,14 +3,21 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { getSupabaseServerClient } from '@/lib/auth/server';
 import { deletePollAction } from './actions';
+import { redirect } from 'next/navigation';
 
 export default async function PollsListPage() {
   const supabase = getSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  if (!user) {
+    redirect('/auth/login');
+  }
+
+  // Only show polls owned by the current user
   const { data: polls } = await supabase
     .from('polls')
     .select('id, question, owner_id, created_at')
+    .eq('owner_id', user.id)
     .order('created_at', { ascending: false });
 
   return (

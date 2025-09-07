@@ -5,8 +5,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Link from 'next/link';
 import { createPollAction } from './actions';
+import { generateCSRFToken } from '@/lib/csrf';
 
-export default function CreatePollPage() {
+export default async function CreatePollPage() {
+  const csrfToken = await generateCSRFToken();
+  
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
@@ -33,6 +36,7 @@ export default function CreatePollPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <form action={createPollAction} className="space-y-6">
+            <input type="hidden" name="csrf_token" value={csrfToken} />
             <div className="space-y-2">
               <Label htmlFor="title">Poll Title</Label>
               <Input 

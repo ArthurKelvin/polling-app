@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth/provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import Link from "next/link";
 export default function RegisterPage() {
   const { signUpWithPassword, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +26,8 @@ export default function RegisterPage() {
       setError(error.message);
       return;
     }
-    router.replace("/polls");
+    const redirectTo = searchParams.get('redirectTo') || '/polls';
+    router.replace(redirectTo);
   }
 
   return (

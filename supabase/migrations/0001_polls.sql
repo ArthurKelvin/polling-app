@@ -161,11 +161,19 @@ as $$
 declare
   v_user uuid := auth.uid();
   v_option_poll uuid;
+  v_poll_exists boolean;
 begin
   if v_user is null then
     raise exception 'Not authenticated';
   end if;
 
+  -- Check if poll exists
+  select exists(select 1 from public.polls where id = p_poll_id) into v_poll_exists;
+  if not v_poll_exists then
+    raise exception 'Poll does not exist';
+  end if;
+
+  -- Check if option belongs to poll
   select o.poll_id into v_option_poll from public.poll_options o where o.id = p_option_id;
   if v_option_poll is null or v_option_poll <> p_poll_id then
     raise exception 'Option does not belong to poll';
@@ -177,5 +185,3 @@ begin
     set option_id = excluded.option_id;
 end;
 $$;
-
-

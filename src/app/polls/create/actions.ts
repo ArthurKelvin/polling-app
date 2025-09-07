@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/auth/server";
+import { validatePollInput, checkRateLimit } from "@/lib/validation";
+import { validateCSRFToken } from "@/lib/csrf";
 
 export async function createPollAction(formData: FormData) {
   const supabase = getSupabaseServerClient();
@@ -15,52 +17,58 @@ export async function createPollAction(formData: FormData) {
     redirect("/auth/login");
   }
 
-  const question = String(formData.get("title") || "").trim();
-  const rawOptions = [
-    String(formData.get("option1") || "").trim(),
-    String(formData.get("option2") || "").trim(),
-    String(formData.get("option3") || "").trim(),
-    String(formData.get("option4") || "").trim(),
-  ].filter(Boolean);
-
-  if (!question) {
-    throw new Error("Poll title is required");
-  }
-  if (rawOptions.length < 2) {
-    throw new Error("At least two options are required");
+  // Validate CSRF token (optional for backward compatibility)
+  const csrfToken = formData.get('csrf_token') as string;
+  if (csrfToken && !(await validateCSRFToken(csrfToken))) {
+    throw new Error("Invalid CSRF token");
   }
 
-  const { data: poll, error: pollError } = await supabase
-    .from("polls")
-    .insert({
-      owner_id: user.id,
-      question,
-      is_public: true,
-    })
-    .select("id")
-    .single();
-
-  if (pollError || !poll) {
-    throw new Error(pollError?.message || "Failed to create poll");
+  // Check rate limiting
+  if (!checkRateLimit(user.id, 'create_poll')) {
+    throw new Error("Too many polls created. Please wait before creating another poll.");
   }
 
-  const optionsPayload = rawOptions.map((label, idx) => ({
-    poll_id: poll.id,
-    label,
-    position: idx,
-  }));
+  try {
+    // Validate and sanitize input
+    const { question, options } = validatePollInput(formData);
 
-  const { error: optionsError } = await supabase
-    .from("poll_options")
-    .insert(optionsPayload);
+    const { data: poll, error: pollError } = await supabase
+      .from("polls")
+      .insert({
+        owner_id: user.id,
+        question,
+        is_public: true,
+      })
+      .select("id")
+      .single();
 
-  if (optionsError) {
-    // best-effort cleanup
-    await supabase.from("polls").delete().eq("id", poll.id);
-    throw new Error(optionsError.message || "Failed to create options");
+    if (pollError || !poll) {
+      throw new Error(pollError?.message || "Failed to create poll");
+    }
+
+    const optionsPayload = options.map((label, idx) => ({
+      poll_id: poll.id,
+      label,
+      position: idx,
+    }));
+
+    const { error: optionsError } = await supabase
+      .from("poll_options")
+      .insert(optionsPayload);
+
+    if (optionsError) {
+      // best-effort cleanup
+      await supabase.from("polls").delete().eq("id", poll.id);
+      throw new Error(optionsError.message || "Failed to create options");
+    }
+
+    redirect("/polls?created=1");
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw new Error("Failed to create poll");
   }
-
-  redirect("/polls?created=1");
 }
 
 

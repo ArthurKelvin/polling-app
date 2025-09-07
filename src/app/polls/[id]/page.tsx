@@ -17,6 +17,9 @@ export default async function PollDetailPage({ params, searchParams }: PageProps
 
   const supabase = getSupabaseServerClient();
 
+  // Check if user is authenticated (optional for public polls)
+  const { data: { user } } = await supabase.auth.getUser();
+
   // Fetch poll data from Supabase
   const { data: poll, error: pollError } = await supabase
     .from('polls')
@@ -77,8 +80,23 @@ export default async function PollDetailPage({ params, searchParams }: PageProps
                 <Button>View Results</Button>
               </Link>
             </div>
-          ) : (
+          ) : user ? (
             <VoteForm pollId={id} options={sortedOptions} />
+          ) : (
+            <div className="text-center py-8">
+              <h3 className="text-xl font-semibold text-blue-600 mb-2">Login Required to Vote</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Please log in to vote on this poll.
+              </p>
+              <div className="flex gap-2 justify-center">
+                <Link href={`/auth/login?redirectTo=/polls/${id}`}>
+                  <Button>Login</Button>
+                </Link>
+                <Link href={`/auth/register?redirectTo=/polls/${id}`}>
+                  <Button variant="outline">Sign Up</Button>
+                </Link>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
