@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { VoteForm } from './vote-form';
+import { PollResults } from './PollResults';
 import { getSupabaseServerClient } from '@/lib/auth/server';
 import { notFound } from 'next/navigation';
 
@@ -69,17 +70,9 @@ export default async function PollDetailPage({ params, searchParams }: PageProps
           <CardTitle className="text-2xl">{poll.question}</CardTitle>
           <CardDescription>Select one option below</CardDescription>
         </CardHeader>
-        <CardContent>
+                <CardContent>
           {hasVoted ? (
-            <div className="text-center py-8">
-              <h3 className="text-xl font-semibold text-green-600 mb-2">Thank you for voting!</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Your vote has been recorded. View the results below.
-              </p>
-              <Link href={`/polls/results?poll=${id}`}>
-                <Button>View Results</Button>
-              </Link>
-            </div>
+            <PollResults pollId={id} />
           ) : user ? (
             <VoteForm pollId={id} options={sortedOptions} />
           ) : (
