@@ -1,87 +1,93 @@
-'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { getSupabaseServerClient } from '@/lib/auth/server';
+import { getCurrentUser } from '@/lib/auth/actions';
+import { getUserPollAnalytics, getRealTimeStats } from '@/lib/analytics';
+import { PollsDashboard } from '@/components/polls/PollsDashboard';
 
-export default function PollsPage() {
-  const searchParams = useSearchParams();
-  const created = searchParams.get('created') === '1';
+interface PollSummary {
+  id: string;
+  question: string;
+  totalVotes: number;
+  createdAt: string;
+  isActive: boolean;
+}
+
+export default async function PollsPage() {
+  const supabase = await getSupabaseServerClient();
+  const user = await getCurrentUser(supabase);
+
+  let polls: PollSummary[] = [];
+  let analytics: any[] = [];
+  let recentActivity: any[] = [];
+
+  if (user) {
+    try {
+      // Get user's polls
+      const { data: userPolls, error: pollsError } = await supabase
+        .from("polls")
+        .select(`
+          id,
+          question,
+          created_at,
+          votes:votes(count)
+        `)
+        .eq("owner_id", user.user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (!pollsError && userPolls) {
+        polls = userPolls.map(poll => ({
+          id: poll.id,
+          question: poll.question,
+          totalVotes: poll.votes?.[0]?.count || 0,
+          createdAt: poll.created_at,
+          isActive: (poll.votes?.[0]?.count || 0) > 0
+        }));
+
+        // Get analytics for recent polls
+        const recentPollIds = polls.slice(0, 5).map(p => p.id);
+        const analyticsPromises = recentPollIds.map(id => getRealTimeStats(id));
+        const statsResults = await Promise.allSettled(analyticsPromises);
+        
+        analytics = statsResults
+          .filter(result => result.status === 'fulfilled')
+          .map((result, index) => ({
+            pollId: recentPollIds[index],
+            ...(result as PromiseFulfilledResult<any>).value
+          }));
+
+        // Get recent activity (simplified)
+        recentActivity = polls.slice(0, 5).map(poll => ({
+          type: 'poll_created',
+          pollId: poll.id,
+          question: poll.question,
+          timestamp: poll.createdAt,
+          votes: poll.totalVotes
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
-      {created && (
-        <div className="mb-6 rounded-md border border-green-300 bg-green-50 p-4 text-green-800">
-          Poll created successfully.
-        </div>
-      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Polls Dashboard</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Create and manage your polls
+          Create and manage your polls with real-time analytics
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Create New Poll</CardTitle>
-            <CardDescription>
-              Start a new poll to gather opinions from your audience
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/polls/create" className="w-full">
-              <Button className="w-full">
-                Create Poll
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Polls</CardTitle>
-            <CardDescription>
-              View and manage your currently active polls
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/polls/list" className="w-full">
-              <Button variant="outline" className="w-full">
-                View Polls
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Results</CardTitle>
-            <CardDescription>
-              See the results and analytics of your polls
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/polls/results" className="w-full">
-              <Button variant="outline" className="w-full">
-                View Results
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-12">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h2>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-              No recent activity. Create your first poll to get started!
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <PollsDashboard 
+        polls={polls}
+        analytics={analytics}
+        recentActivity={recentActivity}
+        isAuthenticated={!!user}
+      />
     </div>
   );
 }
