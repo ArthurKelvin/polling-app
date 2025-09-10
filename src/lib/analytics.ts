@@ -15,6 +15,26 @@ export interface PollAnalytics {
   engagement: EngagementMetrics;
   timeline: TimelineData[];
   demographics?: DemographicsData;
+  performance: PerformanceMetrics;
+  insights: PollInsights;
+}
+
+export interface PerformanceMetrics {
+  averageVotesPerHour: number;
+  peakVotingPeriod: string;
+  conversionRate: number;
+  bounceRate: number;
+  engagementScore: number;
+  viralCoefficient: number;
+}
+
+export interface PollInsights {
+  topPerformingOption: string;
+  leastPopularOption: string;
+  votingPattern: 'linear' | 'exponential' | 'burst' | 'steady';
+  userRetentionRate: number;
+  recommendedActions: string[];
+  trendAnalysis: string;
 }
 
 export interface VoteDistribution {
@@ -51,8 +71,19 @@ export interface DemographicsData {
 /**
  * Get comprehensive analytics for a specific poll
  * 
- * @param pollId - The ID of the poll to analyze
- * @returns Promise resolving to poll analytics data
+ * This function provides detailed analytics including vote distribution,
+ * engagement metrics, performance data, and actionable insights for a poll.
+ * 
+ * @param pollId - The UUID of the poll to analyze
+ * @returns Promise resolving to comprehensive poll analytics data
+ * @throws Error if poll is not found or database query fails
+ * 
+ * @example
+ * ```typescript
+ * const analytics = await getPollAnalytics('123e4567-e89b-12d3-a456-426614174000');
+ * console.log(`Total votes: ${analytics.totalVotes}`);
+ * console.log(`Engagement score: ${analytics.performance.engagementScore}`);
+ * ```
  */
 export async function getPollAnalytics(pollId: string): Promise<PollAnalytics> {
   const supabase = await getSupabaseServerClient();

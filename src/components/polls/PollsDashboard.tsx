@@ -38,13 +38,17 @@ interface PollsDashboardProps {
     votes: number;
   }>;
   isAuthenticated: boolean;
+  isLoading?: boolean;
+  error?: string;
 }
 
 export function PollsDashboard({ 
   polls, 
   analytics, 
   recentActivity, 
-  isAuthenticated 
+  isAuthenticated,
+  isLoading = false,
+  error
 }: PollsDashboardProps) {
   const totalPolls = polls.length;
   const totalVotes = polls.reduce((sum, poll) => sum + poll.totalVotes, 0);
@@ -70,6 +74,54 @@ export function PollsDashboard({
         return <Activity className="h-4 w-4 text-gray-500" />;
     }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-gray-200 rounded w-1/3 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="mb-6">
+          <div className="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Activity className="h-8 w-8 text-red-600" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+            Error Loading Dashboard
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            {error}
+          </p>
+        </div>
+        <Button onClick={() => window.location.reload()}>
+          Try Again
+        </Button>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (

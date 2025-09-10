@@ -1,17 +1,31 @@
 import { z } from 'zod';
 
-// Input validation schemas
+// Enhanced input validation schemas with better error messages
 export const pollQuestionSchema = z
   .string()
-  .min(3, 'Question must be at least 3 characters')
-  .max(500, 'Question must be less than 500 characters')
-  .regex(/^[a-zA-Z0-9\s\?\!\.\,\-\'\"\:\;\(\)]+$/, 'Question contains invalid characters');
+  .min(3, 'Poll question must be at least 3 characters long')
+  .max(500, 'Poll question cannot exceed 500 characters')
+  .regex(
+    /^[a-zA-Z0-9\s\?\!\.\,\-\'\"\:\;\(\)]+$/, 
+    'Question can only contain letters, numbers, spaces, and basic punctuation'
+  )
+  .refine(
+    (val) => val.trim().length >= 3,
+    'Question cannot be just whitespace'
+  );
 
 export const pollOptionSchema = z
   .string()
-  .min(1, 'Option cannot be empty')
-  .max(200, 'Option must be less than 200 characters')
-  .regex(/^[a-zA-Z0-9\s\?\!\.\,\-\'\"\:\;\(\)]+$/, 'Option contains invalid characters');
+  .min(1, 'Poll option cannot be empty')
+  .max(200, 'Poll option cannot exceed 200 characters')
+  .regex(
+    /^[a-zA-Z0-9\s\?\!\.\,\-\'\"\:\;\(\)]+$/, 
+    'Option can only contain letters, numbers, spaces, and basic punctuation'
+  )
+  .refine(
+    (val) => val.trim().length >= 1,
+    'Option cannot be just whitespace'
+  );
 
 export const createPollSchema = z.object({
   question: pollQuestionSchema,
@@ -104,23 +118,48 @@ const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
 /**
  * Enhanced rate limiting function with better tracking and configuration
  * 
+ * This function provides comprehensive rate limiting with detailed feedback
+ * including remaining requests, reset time, and user-friendly messages.
+ * 
  * @param userId - User ID for rate limiting
  * @param action - Action being performed
  * @param success - Whether the action was successful (for conditional counting)
- * @returns Object with rate limit status and remaining requests
+ * @returns Object with rate limit status, remaining requests, and user feedback
+ * 
+ * @example
+ * ```typescript
+ * const result = checkRateLimit('user123', 'vote', true);
+ * if (!result.allowed) {
+ *   throw new Error(`Rate limit exceeded. Try again in ${result.retryAfterSeconds} seconds.`);
+ * }
+ * ```
  */
 export function checkRateLimit(
   userId: string, 
   action: 'vote' | 'create_poll' | 'delete_poll' | 'view_poll',
   success: boolean = true
-): { allowed: boolean; remaining: number; resetTime: number } {
+): { 
+  allowed: boolean; 
+  remaining: number; 
+  resetTime: number;
+  retryAfterSeconds: number;
+  userMessage: string;
+  limit: number;
+} {
   const now = Date.now();
   const key = `${userId}:${action}`;
   const config = RATE_LIMIT_CONFIGS[action];
   
   if (!config) {
     // If no config found, allow the request
-    return { allowed: true, remaining: Infinity, resetTime: now + 60000 };
+    return { 
+      allowed: true, 
+      remaining: Infinity, 
+      resetTime: now + 60000,
+      retryAfterSeconds: 0,
+      userMessage: 'No rate limit configured',
+      limit: Infinity
+    };
   }
   
   const userLimit = rateLimitMap.get(key);
@@ -137,12 +176,17 @@ export function checkRateLimit(
   
   const currentEntry = rateLimitMap.get(key)!;
   
+  const retryAfterSeconds = Math.ceil((currentEntry.resetTime - now) / 1000);
+  
   // Check if we should skip counting this request
   if (config.skipSuccessfulRequests && success) {
     return { 
       allowed: true, 
       remaining: config.maxRequests - currentEntry.count,
-      resetTime: currentEntry.resetTime
+      resetTime: currentEntry.resetTime,
+      retryAfterSeconds,
+      userMessage: `You have ${config.maxRequests - currentEntry.count} ${action} requests remaining`,
+      limit: config.maxRequests
     };
   }
   
@@ -150,7 +194,10 @@ export function checkRateLimit(
     return { 
       allowed: true, 
       remaining: config.maxRequests - currentEntry.count,
-      resetTime: currentEntry.resetTime
+      resetTime: currentEntry.resetTime,
+      retryAfterSeconds,
+      userMessage: `You have ${config.maxRequests - currentEntry.count} ${action} requests remaining`,
+      limit: config.maxRequests
     };
   }
   
@@ -159,7 +206,10 @@ export function checkRateLimit(
     return { 
       allowed: false, 
       remaining: 0,
-      resetTime: currentEntry.resetTime
+      resetTime: currentEntry.resetTime,
+      retryAfterSeconds,
+      userMessage: `Rate limit exceeded. You can ${action} again in ${retryAfterSeconds} seconds.`,
+      limit: config.maxRequests
     };
   }
   
@@ -169,7 +219,10 @@ export function checkRateLimit(
   return { 
     allowed: true, 
     remaining: config.maxRequests - currentEntry.count,
-    resetTime: currentEntry.resetTime
+    resetTime: currentEntry.resetTime,
+    retryAfterSeconds,
+    userMessage: `You have ${config.maxRequests - currentEntry.count} ${action} requests remaining`,
+    limit: config.maxRequests
   };
 }
 
