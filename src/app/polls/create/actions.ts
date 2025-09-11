@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/auth/server";
 import { validatePollInput, checkRateLimit } from "@/lib/validation";
 import { validateCSRFToken } from "@/lib/csrf";
+import { ensureAuthenticated } from "@/lib/auth/actions";
+import { PollError, CSRFError, RateLimitError, ErrorHandler } from "@/lib/errors";
 
 /**
  * Server Action: Create a new poll
@@ -22,37 +24,31 @@ import { validateCSRFToken } from "@/lib/csrf";
 export async function createPollAction(formData: FormData) {
   const supabase = await getSupabaseServerClient();
 
-  // Step 1: Verify user authentication
-  // This ensures only authenticated users can create polls
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    redirect("/auth/login");
-  }
-
-  // Step 2: Validate CSRF token (optional for backward compatibility)
-  // CSRF protection prevents cross-site request forgery attacks
-  const csrfToken = formData.get('csrf_token') as string;
-  if (csrfToken && !(await validateCSRFToken(csrfToken))) {
-    throw new Error("Invalid CSRF token");
-  }
-
-  // Step 3: Check rate limiting
-  // Prevents abuse by limiting poll creation to 3 per minute per user
-  if (!checkRateLimit(user.id, 'create_poll')) {
-    throw new Error("Too many polls created. Please wait before creating another poll.");
-  }
-
   try {
+    // Step 1: Verify user authentication using centralized utility
+    const { user } = await ensureAuthenticated(supabase);
+
+    // Step 2: Validate CSRF token (optional for backward compatibility)
+    const csrfToken = formData.get('csrf_token') as string;
+    if (csrfToken && !(await validateCSRFToken(csrfToken))) {
+      throw new CSRFError("Invalid CSRF token", "/polls/create");
+    }
+
+    // Step 3: Check rate limiting with enhanced system
+    const rateLimitResult = checkRateLimit(user.id, 'create_poll');
+    if (!rateLimitResult.allowed) {
+      throw new RateLimitError(
+        `Too many polls created. Please wait ${Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)} seconds before creating another poll.`,
+        'create_poll',
+        Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000),
+        "/polls/create"
+      );
+    }
+
     // Step 4: Validate and sanitize input
-    // This prevents XSS attacks and ensures data integrity
     const { question, options } = validatePollInput(formData);
 
     // Step 5: Create poll record in database
-    // All polls are created as public by default for sharing
     const { data: poll, error: pollError } = await supabase
       .from("polls")
       .insert({
@@ -64,11 +60,15 @@ export async function createPollAction(formData: FormData) {
       .single();
 
     if (pollError || !poll) {
-      throw new Error(pollError?.message || "Failed to create poll");
+      throw new PollError(
+        ErrorHandler.formatSupabaseError(pollError),
+        undefined,
+        'create_poll',
+        "/polls/create"
+      );
     }
 
     // Step 6: Create poll options
-    // Map options to database format with proper positioning
     const optionsPayload = options.map((label, idx) => ({
       poll_id: poll.id,
       label,
@@ -80,22 +80,30 @@ export async function createPollAction(formData: FormData) {
       .insert(optionsPayload);
 
     if (optionsError) {
-      // Step 7: Cleanup on failure
-      // Remove the poll if options creation fails to maintain data consistency
+      // Cleanup on failure
       await supabase.from("polls").delete().eq("id", poll.id);
-      throw new Error(optionsError.message || "Failed to create options");
+      throw new PollError(
+        ErrorHandler.formatSupabaseError(optionsError),
+        poll.id,
+        'create_options',
+        "/polls/create"
+      );
     }
 
-    // Step 8: Redirect on success
-    // Show success message to user
+    // Step 7: Redirect on success
     redirect("/polls?created=1");
+    
   } catch (error) {
-    // Step 9: Error handling
-    // Provide meaningful error messages while preventing information leakage
-    if (error instanceof Error) {
-      throw new Error(error.message);
+    // Handle different error types appropriately
+    if (error instanceof PollError || error instanceof CSRFError || error instanceof RateLimitError) {
+      error.log();
+      redirect(error.redirectPath || "/polls/create");
     }
-    throw new Error("Failed to create poll");
+    
+    // Handle unexpected errors
+    const errorInfo = ErrorHandler.handle(error, { action: 'create_poll' });
+    console.error('Unexpected poll creation error:', error);
+    redirect("/polls/create?error=" + encodeURIComponent(errorInfo.userMessage));
   }
 }
 
