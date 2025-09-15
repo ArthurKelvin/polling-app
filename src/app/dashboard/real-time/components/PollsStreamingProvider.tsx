@@ -26,8 +26,7 @@ export function PollsStreamingProvider({ initialPolls }: PollsStreamingProviderP
   const [polls, setPolls] = useState<Poll[]>(initialPolls);
   const [isConnected, setIsConnected] = useState(false);
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
-
-  const supabase = createClient();
+ const supabase = createClient();
 
   // Update poll data when receiving real-time updates
   const handlePollUpdate = useCallback((payload: any) => {

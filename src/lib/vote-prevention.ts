@@ -5,7 +5,7 @@
  * using the enhanced database schema with multiple layers of protection.
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { getSupabaseClient } from '@/lib/auth/client';
 import { useState, useEffect } from 'react';
 
 export interface VoteResult {
@@ -34,7 +34,7 @@ export interface PollStats {
  * Check if the current user has already voted on a specific poll
  */
 export async function checkUserVoteStatus(pollId: string): Promise<boolean> {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   
   const { data, error } = await supabase
     .rpc('user_has_voted', { p_poll_id: pollId });
@@ -55,7 +55,7 @@ export async function castVote(
   optionId: string, 
   allowUpdate: boolean = false
 ): Promise<VoteResult> {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   
   const { data, error } = await supabase
     .rpc('cast_vote_enhanced', {
@@ -80,7 +80,7 @@ export async function castVote(
  * Get comprehensive poll statistics including user vote status
  */
 export async function getPollStats(pollId: string): Promise<PollStats | null> {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   
   const { data, error } = await supabase
     .rpc('get_poll_stats', { p_poll_id: pollId });
@@ -97,7 +97,7 @@ export async function getPollStats(pollId: string): Promise<PollStats | null> {
  * Get the current user's vote for a specific poll
  */
 export async function getUserVote(pollId: string) {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   
   const { data, error } = await supabase
     .rpc('get_user_vote', { p_poll_id: pollId });
