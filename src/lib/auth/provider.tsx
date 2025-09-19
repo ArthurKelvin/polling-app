@@ -21,6 +21,8 @@ type AuthContextValue = {
   signUpWithPassword: (params: { email: string; password: string }) => Promise<{ error?: Error | null; data?: { user: any; session: any } | null; needsConfirmation?: boolean }>;
   /** Sign out current user and clear session */
   signOut: () => Promise<void>;
+  /** Send password reset email to user */
+  resetPassword: (email: string) => Promise<{ error?: Error | null; success?: boolean }>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -108,7 +110,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
   }, [supabase]);
 
-  const value = useMemo<AuthContextValue>(() => ({ user, session, loading, signInWithPassword, signUpWithPassword, signOut }), [user, session, loading, signInWithPassword, signUpWithPassword, signOut]);
+  /**
+   * Send password reset email to user
+   * 
+   * @param email - User's email address
+   * @returns Promise resolving to success status or error
+   */
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    
+    if (error) {
+      return { error };
+    }
+    
+    return { success: true, error: null };
+  }, [supabase]);
+
+  const value = useMemo<AuthContextValue>(() => ({ user, session, loading, signInWithPassword, signUpWithPassword, signOut, resetPassword }), [user, session, loading, signInWithPassword, signUpWithPassword, signOut, resetPassword]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
