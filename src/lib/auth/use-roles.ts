@@ -33,7 +33,18 @@ export function useRoles() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch user permissions');
+        // If permissions API fails, return default permissions
+        console.warn('Failed to fetch user permissions, using defaults');
+        return {
+          role: 'user',
+          permissions: ['create_poll', 'vote_poll', 'view_poll', 'share_poll'],
+          isAdmin: false,
+          isModerator: false,
+          canCreatePoll: true,
+          canVote: true,
+          canViewPolls: true,
+          canSharePolls: true
+        };
       }
 
       const data = await response.json();

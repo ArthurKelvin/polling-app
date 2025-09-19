@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth/provider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { SuccessAnimation, LoadingOverlay } from "@/components/ui/loading-spinner";
 import { Mail, CheckCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -21,19 +22,31 @@ function LoginForm() {
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
+    setIsLoggingIn(true);
+    
     const { error } = await signInWithPassword({ email, password });
-    setSubmitting(false);
+    
     if (error) {
       setError(error.message);
-      return;
+      setIsLoggingIn(false);
+    } else {
+      // Show success animation
+      setShowSuccess(true);
+      // Redirect after animation
+      setTimeout(() => {
+        const redirectTo = searchParams.get('redirectTo') || '/polls';
+        router.replace(redirectTo);
+      }, 2000);
     }
-    const redirectTo = searchParams.get('redirectTo') || '/polls';
-    router.replace(redirectTo);
+    
+    setSubmitting(false);
   }
 
   async function handleForgotPassword(e: React.FormEvent) {
@@ -138,36 +151,52 @@ function LoginForm() {
   }
 
   return (
-    <div className="mx-auto max-w-sm p-6">
-      <h1 className="text-2xl font-semibold mb-4">Login</h1>
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+    <>
+      <div className="mx-auto max-w-sm p-6">
+        <h1 className="text-2xl font-semibold mb-4">Login</h1>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </div>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          <Button type="submit" disabled={submitting || loading} className="w-full">
+            {submitting ? "Signing in..." : "Sign in"}
+          </Button>
+        </form>
+        <div className="mt-4 space-y-2">
+          <p className="text-sm">
+            No account? <Link href="/auth/register" className="underline">Create one</Link>
+          </p>
+          <p className="text-sm">
+            <button 
+              onClick={() => setShowForgotPassword(true)}
+              className="underline hover:text-gray-800"
+            >
+              Forgot your password?
+            </button>
+          </p>
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </div>
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        <Button type="submit" disabled={submitting || loading} className="w-full">
-          {submitting ? "Signing in..." : "Sign in"}
-        </Button>
-      </form>
-      <div className="mt-4 space-y-2">
-        <p className="text-sm">
-          No account? <Link href="/auth/register" className="underline">Create one</Link>
-        </p>
-        <p className="text-sm">
-          <button 
-            onClick={() => setShowForgotPassword(true)}
-            className="underline hover:text-gray-800"
-          >
-            Forgot your password?
-          </button>
-        </p>
       </div>
-    </div>
+      
+      {/* Loading Overlay */}
+      <LoadingOverlay 
+        isVisible={isLoggingIn} 
+        text="Signing you in..." 
+      />
+      
+      {/* Success Animation */}
+      <SuccessAnimation 
+        isVisible={showSuccess}
+        text="Welcome back!"
+        onComplete={() => setShowSuccess(false)}
+        duration={2000}
+      />
+    </>
   );
 }
 

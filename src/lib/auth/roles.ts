@@ -13,22 +13,26 @@ import type { UserRole, Permission, UserPermissions, RoleAssignment } from "@/ty
 export async function getUserRole(userId: string): Promise<UserRole | null> {
   try {
     const supabase = getSupabaseServerClient();
-    
-    const { data, error } = await supabase
+    const { data, error } = await (await supabase)
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
       .single();
 
     if (error) {
+      // If table doesn't exist, return default user role
+      if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+        console.warn('User roles table not found, using default role');
+        return 'user';
+      }
       console.error('Error getting user role:', error);
-      return null;
+      return 'user'; // Default to user role on error
     }
 
     return data?.role || 'user';
   } catch (error) {
     console.error('Unexpected error getting user role:', error);
-    return null;
+    return 'user'; // Default to user role on error
   }
 }
 
@@ -38,8 +42,7 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
 export async function hasPermission(userId: string, permission: Permission): Promise<boolean> {
   try {
     const supabase = getSupabaseServerClient();
-    
-    const { data, error } = await supabase
+    const { data, error } = await (await supabase)
       .rpc('has_permission', {
         user_uuid: userId,
         permission_name: permission
@@ -66,26 +69,103 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
     
     // Get user role
     const role = await getUserRole(userId);
-    if (!role) return null;
-
-    // Get permissions for the role
-    const { data, error } = await supabase
-      .rpc('get_user_permissions', {
-        user_uuid: userId
-      });
-
-    if (error) {
-      console.error('Error getting user permissions:', error);
-      return null;
+    if (!role) {
+      // Return default permissions if role can't be determined
+      return {
+        role: 'user',
+        permissions: ['create_poll', 'vote_poll', 'view_poll', 'share_poll'],
+        isAdmin: false,
+        isModerator: false,
+        canCreatePoll: true,
+        canVote: true,
+        canViewPolls: true,
+        canSharePolls: true
+      };
     }
 
-    return {
-      role,
-      permissions: data || []
-    };
+    // Try to get permissions from database, fallback to default if table doesn't exist
+    try {
+      const { data, error } = await (await supabase)
+        .rpc('get_user_permissions', {
+          user_uuid: userId
+        });
+      
+      if (error) {
+        console.warn('Error getting user permissions from database, using defaults:', error);
+        // Return default permissions based on role
+        return getDefaultPermissions(role);
+      }
+
+      return {
+        role,
+        permissions: data || getDefaultPermissions(role).permissions,
+        isAdmin: role === 'admin',
+        isModerator: role === 'moderator' || role === 'admin',
+        canCreatePoll: true,
+        canVote: true,
+        canViewPolls: true,
+        canSharePolls: true
+      };
+    } catch (dbError) {
+      console.warn('Database error getting permissions, using defaults:', dbError);
+      return getDefaultPermissions(role);
+    }
   } catch (error) {
     console.error('Unexpected error getting user permissions:', error);
-    return null;
+    // Return basic user permissions as fallback
+    return {
+      role: 'user',
+      permissions: ['create_poll', 'vote_poll', 'view_poll', 'share_poll'],
+      isAdmin: false,
+      isModerator: false,
+      canCreatePoll: true,
+      canVote: true,
+      canViewPolls: true,
+      canSharePolls: true
+    };
+  }
+}
+
+/**
+ * Get default permissions based on role
+ */
+function getDefaultPermissions(role: UserRole): UserPermissions {
+  const basePermissions: Permission[] = ['create_poll', 'vote_poll', 'view_poll', 'share_poll'];
+  
+  switch (role) {
+    case 'admin':
+      return {
+        role,
+        permissions: [...basePermissions, 'manage_users', 'delete_poll', 'moderate_poll', 'view_analytics'] as Permission[],
+        isAdmin: true,
+        isModerator: true,
+        canCreatePoll: true,
+        canVote: true,
+        canViewPolls: true,
+        canSharePolls: true
+      };
+    case 'moderator':
+      return {
+        role,
+        permissions: [...basePermissions, 'moderate_poll', 'delete_comment'] as Permission[],
+        isAdmin: false,
+        isModerator: true,
+        canCreatePoll: true,
+        canVote: true,
+        canViewPolls: true,
+        canSharePolls: true
+      };
+    default:
+      return {
+        role,
+        permissions: basePermissions as Permission[],
+        isAdmin: false,
+        isModerator: false,
+        canCreatePoll: true,
+        canVote: true,
+        canViewPolls: true,
+        canSharePolls: true
+      };
   }
 }
 
@@ -101,8 +181,8 @@ export async function assignUserRole(assignerId: string, userId: string, role: U
     }
 
     const supabase = getSupabaseServerClient();
-    
-    const { error } = await supabase
+
+    const { error } = await (await supabase)
       .rpc('assign_user_role', {
         user_uuid: userId,
         role_name: role
@@ -162,8 +242,11 @@ export async function getAllUsersWithRoles(requesterId: string): Promise<{ succe
     }
 
     const supabase = getSupabaseServerClient();
-    
-    const { data, error } = await supabase
+
+    // Ensure supabase is awaited if getSupabaseServerClient is async
+    const supabaseClient = await supabase;
+
+    const { data, error } = await supabaseClient
       .from('user_roles')
       .select(`
         user_id,

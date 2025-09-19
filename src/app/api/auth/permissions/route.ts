@@ -9,10 +9,10 @@ import { getUserPermissions } from '@/lib/auth/roles';
 export async function GET(request: NextRequest) {
   try {
     const supabase = getSupabaseServerClient();
-    
+
     // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const { data: { user }, error: authError } = await (await supabase).auth.getUser();
+
     if (authError || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },

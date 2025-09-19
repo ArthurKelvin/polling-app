@@ -34,6 +34,12 @@ export interface RolePermission {
 export interface UserPermissions {
   permissions: Permission[];
   role: UserRole;
+  isAdmin?: boolean;
+  isModerator?: boolean;
+  canCreatePoll?: boolean;
+  canVote?: boolean;
+  canViewPolls?: boolean;
+  canSharePolls?: boolean;
 }
 
 export interface AuthUser {

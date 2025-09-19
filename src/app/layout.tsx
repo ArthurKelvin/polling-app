@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/provider";
@@ -14,12 +14,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   title: "Polling App - Create and Share Polls",
   description: "A modern polling application with QR code sharing, real-time results, and discussion features. Create polls, vote, and share with others.",
   keywords: ["polling", "polls", "voting", "surveys", "QR code", "real-time"],
   authors: [{ name: "Polling App Team" }],
-  viewport: "width=device-width, initial-scale=1, maximum-scale=5",
   robots: "index, follow",
   openGraph: {
     title: "Polling App - Create and Share Polls",
