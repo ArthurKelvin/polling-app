@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface LoadingSpinnerProps {
@@ -36,7 +36,7 @@ interface LoadingOverlayProps {
   className?: string;
 }
 
-export function LoadingOverlay({ isVisible, text = "Loading...", className }: LoadingOverlayProps) {
+export const LoadingOverlay = React.memo(function LoadingOverlay({ isVisible, text = "Loading...", className }: LoadingOverlayProps) {
   if (!isVisible) return null;
 
   return (
@@ -50,7 +50,7 @@ export function LoadingOverlay({ isVisible, text = "Loading...", className }: Lo
       </div>
     </div>
   );
-}
+});
 
 interface SuccessAnimationProps {
   isVisible: boolean;
@@ -59,21 +59,21 @@ interface SuccessAnimationProps {
   duration?: number;
 }
 
-export function SuccessAnimation({ 
+export const SuccessAnimation = React.memo(function SuccessAnimation({ 
   isVisible, 
   text = "Success!", 
   onComplete,
   duration = 2000 
 }: SuccessAnimationProps) {
-  if (!isVisible) return null;
-
   // Auto-hide after duration
-  React.useEffect(() => {
+  useEffect(() => {
     if (isVisible && onComplete) {
       const timer = setTimeout(onComplete, duration);
       return () => clearTimeout(timer);
     }
   }, [isVisible, onComplete, duration]);
+
+  if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 bg-green-50/80 backdrop-blur-sm z-50 flex items-center justify-center">
@@ -103,5 +103,5 @@ export function SuccessAnimation({
       </div>
     </div>
   );
-}
+});
 
