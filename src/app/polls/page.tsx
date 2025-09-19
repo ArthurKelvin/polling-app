@@ -32,21 +32,36 @@ export default async function PollsPage() {
         .select(`
           id,
           question,
-          created_at,
-          votes:votes(count)
+          created_at
         `)
         .eq("owner_id", user.user.id)
         .order("created_at", { ascending: false })
         .limit(10);
 
       if (!pollsError && userPolls) {
-        polls = userPolls.map(poll => ({
-          id: poll.id,
-          question: poll.question,
-          totalVotes: poll.votes?.[0]?.count || 0,
-          createdAt: poll.created_at,
-          isActive: (poll.votes?.[0]?.count || 0) > 0
-        }));
+        // Get vote counts for each poll
+        const pollsWithVotes = await Promise.all(
+          userPolls.map(async (poll) => {
+            const { count: voteCount, error: voteError } = await supabase
+              .from("votes")
+              .select("*", { count: "exact", head: true })
+              .eq("poll_id", poll.id);
+
+            if (voteError) {
+              console.warn(`Failed to count votes for poll ${poll.id}:`, voteError);
+            }
+
+            return {
+              id: poll.id,
+              question: poll.question,
+              totalVotes: voteCount || 0,
+              createdAt: poll.created_at,
+              isActive: (voteCount || 0) > 0
+            };
+          })
+        );
+
+        polls = pollsWithVotes;
 
         // Get analytics for recent polls
         const recentPollIds = polls.slice(0, 5).map(p => p.id);

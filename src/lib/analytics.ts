@@ -100,20 +100,40 @@ export async function getPollAnalytics(pollId: string): Promise<PollAnalytics> {
       throw new Error("Poll not found");
     }
 
-    // Get vote distribution
-    const { data: voteDistribution, error: voteError } = await supabase
+    // Get poll options
+    const { data: options, error: optionsError } = await supabase
       .from("poll_options")
-      .select(`
-        id,
-        label,
-        position,
-        votes:votes(count)
-      `)
+      .select("id, label, position")
       .eq("poll_id", pollId)
       .order("position");
 
-    if (voteError) {
-      throw new Error("Failed to fetch vote distribution");
+    if (optionsError) {
+      throw new Error("Failed to fetch poll options");
+    }
+
+    // Get vote counts for each option
+    const voteDistribution = [];
+    if (options && options.length > 0) {
+      for (const option of options) {
+        const { count: voteCount, error: voteCountError } = await supabase
+          .from("votes")
+          .select("*", { count: "exact", head: true })
+          .eq("poll_id", pollId)
+          .eq("option_id", option.id);
+
+        if (voteCountError) {
+          console.warn(`Failed to count votes for option ${option.id}:`, voteCountError);
+          voteDistribution.push({
+            ...option,
+            votes: 0
+          });
+        } else {
+          voteDistribution.push({
+            ...option,
+            votes: voteCount || 0
+          });
+        }
+      }
     }
 
     // Get total votes and unique voters
@@ -290,17 +310,40 @@ export async function getRealTimeStats(pollId: string): Promise<{
       throw new Error("Failed to fetch recent votes");
     }
 
-    // Get top option
-    const { data: topOption, error: optionError } = await supabase
+    // Get all options for the poll
+    const { data: options, error: optionError } = await supabase
       .from("poll_options")
-      .select("label, votes:votes(count)")
-      .eq("poll_id", pollId)
-      .order("votes(count)", { ascending: false })
-      .limit(1)
-      .single();
+      .select("id, label")
+      .eq("poll_id", pollId);
 
     if (optionError) {
-      throw new Error("Failed to fetch top option");
+      throw new Error("Failed to fetch poll options");
+    }
+
+    // Find the option with the most votes
+    let topOption = null;
+    let maxVotes = 0;
+
+    if (options && options.length > 0) {
+      for (const option of options) {
+        // Count votes for this specific option
+        const { count: voteCount, error: voteCountError } = await supabase
+          .from("votes")
+          .select("*", { count: "exact", head: true })
+          .eq("poll_id", pollId)
+          .eq("option_id", option.id);
+
+        if (voteCountError) {
+          console.warn(`Failed to count votes for option ${option.id}:`, voteCountError);
+          continue;
+        }
+
+        const votes = voteCount || 0;
+        if (votes > maxVotes) {
+          maxVotes = votes;
+          topOption = option;
+        }
+      }
     }
 
     return {
