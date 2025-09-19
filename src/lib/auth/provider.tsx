@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { getSupabaseBrowserClient } from "./client";
+import { getSupabaseClient } from "./client";
 
 /**
  * Authentication context value interface
@@ -18,7 +18,7 @@ type AuthContextValue = {
   /** Sign in with email and password */
   signInWithPassword: (params: { email: string; password: string }) => Promise<{ error?: Error | null }>;
   /** Register new user with email and password */
-  signUpWithPassword: (params: { email: string; password: string }) => Promise<{ error?: Error | null }>;
+  signUpWithPassword: (params: { email: string; password: string }) => Promise<{ error?: Error | null; data?: { user: any; session: any } | null; needsConfirmation?: boolean }>;
   /** Sign out current user and clear session */
   signOut: () => Promise<void>;
 };
@@ -34,7 +34,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
  * @param children - React children components that need access to auth context
  */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const supabase = getSupabaseBrowserClient();
+  const supabase = getSupabaseClient();
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Get initial session on component mount
     // This handles page refreshes and direct URL access
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
       if (!isMounted) return; // Prevent state updates if component unmounted
       setSession(data.session ?? null);
       setUser(data.session?.user ?? null);
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for authentication state changes
     // This handles login, logout, and token refresh events
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_event: string, newSession: Session | null) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
     });
@@ -80,11 +80,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Register new user with email and password
    * 
    * @param params - Object containing email and password
-   * @returns Promise resolving to error object if registration fails
+   * @returns Promise resolving to error object if registration fails, or success data with confirmation status
    */
   const signUpWithPassword = useCallback(async ({ email, password }: { email: string; password: string }) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error };
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    
+    if (error) {
+      return { error };
+    }
+    
+    // Check if user needs email confirmation
+    const needsConfirmation = data.user && !data.session;
+    
+    return { 
+      data, 
+      needsConfirmation,
+      error: null 
+    };
   }, [supabase]);
 
   /**

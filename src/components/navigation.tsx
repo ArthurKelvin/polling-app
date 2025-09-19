@@ -71,6 +71,15 @@ export function Navigation() {
             Polling App
           </Link>
           <div className="flex items-center gap-4">
+            {/* Navigation links */}
+            <div className="flex gap-2">
+              <Link href="/polls">
+                <Button variant="ghost" size="sm">Polls</Button>
+              </Link>
+              <Link href="/dashboard/real-time">
+                <Button variant="ghost" size="sm">Real-time Dashboard</Button>
+              </Link>
+            </div>
             {/* Display user email for context */}
             <span className="text-sm text-gray-600 dark:text-gray-400">
               Welcome, {user.email}
