@@ -18,7 +18,7 @@ type AuthContextValue = {
   /** Sign in with email and password */
   signInWithPassword: (params: { email: string; password: string }) => Promise<{ error?: Error | null }>;
   /** Register new user with email and password */
-  signUpWithPassword: (params: { email: string; password: string }) => Promise<{ error?: Error | null }>;
+  signUpWithPassword: (params: { email: string; password: string }) => Promise<{ error?: Error | null; data?: { user: any; session: any } | null; needsConfirmation?: boolean }>;
   /** Sign out current user and clear session */
   signOut: () => Promise<void>;
 };
@@ -80,11 +80,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Register new user with email and password
    * 
    * @param params - Object containing email and password
-   * @returns Promise resolving to error object if registration fails
+   * @returns Promise resolving to error object if registration fails, or success data with confirmation status
    */
   const signUpWithPassword = useCallback(async ({ email, password }: { email: string; password: string }) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return { error };
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    
+    if (error) {
+      return { error };
+    }
+    
+    // Check if user needs email confirmation
+    const needsConfirmation = data.user && !data.session;
+    
+    return { 
+      data, 
+      needsConfirmation,
+      error: null 
+    };
   }, [supabase]);
 
   /**
