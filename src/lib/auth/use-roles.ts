@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './provider';
 import type { UserRole, Permission, UserPermissions } from '@/types/auth';
 
@@ -121,11 +121,11 @@ export function withPermission<P extends object>(
     const { hasPermission } = useRoles();
     
     if (hasPermission(requiredPermission)) {
-      return <Component {...props} />;
+      return Component(props);
     }
     
     if (fallback) {
-      return <fallback {...props} />;
+      return fallback(props);
     }
     
     return null;
