@@ -5,7 +5,7 @@
  * and user experience improvements across the polling application.
  */
 
-import { ValidationError } from './errors';
+// ValidationError import removed - not used in this file
 
 /**
  * Form validation result interface
@@ -114,125 +114,7 @@ export function sanitizeFormInput(input: string): string {
     .replace(/vbscript:/gi, ''); // Remove vbscript: protocols
 }
 
-/**
- * Validate poll question with enhanced feedback
- * 
- * @param question - Poll question to validate
- * @returns Validation result with detailed feedback
- */
-export function validatePollQuestion(question: string): FormValidationResult {
-  const result: FormValidationResult = {
-    isValid: true,
-    errors: {},
-    warnings: {},
-    suggestions: {}
-  };
-
-  if (!question || question.trim().length === 0) {
-    result.isValid = false;
-    result.errors.question = 'Poll question is required';
-    return result;
-  }
-
-  if (question.trim().length < 3) {
-    result.isValid = false;
-    result.errors.question = 'Poll question must be at least 3 characters long';
-    result.suggestions.question = 'Try adding more detail to make your question clearer';
-  }
-
-  if (question.length > 500) {
-    result.isValid = false;
-    result.errors.question = 'Poll question cannot exceed 500 characters';
-    result.suggestions.question = 'Try shortening your question while keeping the main point';
-  }
-
-  if (!/^[a-zA-Z0-9\s\?\!\.\,\-\'\"\:\;\(\)]+$/.test(question)) {
-    result.isValid = false;
-    result.errors.question = 'Question contains invalid characters';
-    result.suggestions.question = 'Use only letters, numbers, spaces, and basic punctuation';
-  }
-
-  // Add warnings for potential issues
-  if (question.length > 200) {
-    result.warnings.question = 'Long questions might reduce engagement';
-  }
-
-  if (!question.includes('?')) {
-    result.warnings.question = 'Consider adding a question mark to make it clearer';
-  }
-
-  return result;
-}
-
-/**
- * Validate poll options with enhanced feedback
- * 
- * @param options - Array of poll options to validate
- * @returns Validation result with detailed feedback
- */
-export function validatePollOptions(options: string[]): FormValidationResult {
-  const result: FormValidationResult = {
-    isValid: true,
-    errors: {},
-    warnings: {},
-    suggestions: {}
-  };
-
-  if (!options || options.length === 0) {
-    result.isValid = false;
-    result.errors.options = 'At least one poll option is required';
-    return result;
-  }
-
-  if (options.length < 2) {
-    result.isValid = false;
-    result.errors.options = 'At least 2 poll options are required';
-    result.suggestions.options = 'Add more options to give voters meaningful choices';
-  }
-
-  if (options.length > 10) {
-    result.isValid = false;
-    result.errors.options = 'Maximum 10 poll options allowed';
-    result.suggestions.options = 'Consider reducing options to avoid overwhelming voters';
-  }
-
-  // Validate each option
-  options.forEach((option, index) => {
-    const fieldName = `option${index + 1}`;
-    
-    if (!option || option.trim().length === 0) {
-      result.isValid = false;
-      result.errors[fieldName] = 'Poll option cannot be empty';
-      return;
-    }
-
-    if (option.trim().length < 1) {
-      result.isValid = false;
-      result.errors[fieldName] = 'Poll option must contain at least one character';
-    }
-
-    if (option.length > 200) {
-      result.isValid = false;
-      result.errors[fieldName] = 'Poll option cannot exceed 200 characters';
-      result.suggestions[fieldName] = 'Try shortening this option while keeping it clear';
-    }
-
-    if (!/^[a-zA-Z0-9\s\?\!\.\,\-\'\"\:\;\(\)]+$/.test(option)) {
-      result.isValid = false;
-      result.errors[fieldName] = 'Option contains invalid characters';
-      result.suggestions[fieldName] = 'Use only letters, numbers, spaces, and basic punctuation';
-    }
-  });
-
-  // Check for duplicate options
-  const uniqueOptions = new Set(options.map(opt => opt.toLowerCase().trim()));
-  if (uniqueOptions.size !== options.length) {
-    result.warnings.options = 'Some options appear to be duplicates';
-    result.suggestions.options = 'Make sure each option is unique and distinct';
-  }
-
-  return result;
-}
+// Note: Poll validation functions moved to validation.ts to avoid duplication
 
 /**
  * Generate form submission summary for logging
