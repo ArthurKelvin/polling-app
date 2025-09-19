@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { getSupabaseClient } from '@/lib/auth/client';
 import { PollsList } from './PollsList';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -26,7 +26,7 @@ export function PollsStreamingProvider({ initialPolls }: PollsStreamingProviderP
   const [polls, setPolls] = useState<Poll[]>(initialPolls);
   const [isConnected, setIsConnected] = useState(false);
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
- const supabase = createClient();
+ const supabase = getSupabaseClient();
 
   // Update poll data when receiving real-time updates
   const handlePollUpdate = useCallback((payload: any) => {

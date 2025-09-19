@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { getSupabaseServerClient } from '@/lib/auth/server';
 import { PollsList } from './components/PollsList';
 import { CreatePollForm } from './components/CreatePollForm';
 import { RealTimeStats } from './components/RealTimeStats';
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 // Server Component - fetches initial data
 async function DashboardContent() {
-  const supabase = createClient();
+  const supabase = await getSupabaseServerClient();
   
   // Fetch polls data on the server
   const { data: polls, error } = await supabase

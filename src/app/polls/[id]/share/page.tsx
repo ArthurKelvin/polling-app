@@ -137,7 +137,7 @@ export default async function PollSharePage({ params }: PageProps) {
               </div>
               <h3 className="font-semibold">Generate QR Code</h3>
               <p className="text-sm text-gray-600">
-                Click "Generate QR Code" to create a scannable code
+                Click &quot;Generate QR Code&quot; to create a scannable code
               </p>
             </div>
             <div className="text-center space-y-2">

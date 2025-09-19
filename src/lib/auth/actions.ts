@@ -2,23 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "./server";
-
-/**
- * Custom error class for authentication-related errors
- * 
- * Provides structured error handling with specific error codes
- * for better error categorization and user experience
- */
-export class AuthError extends Error {
-  constructor(
-    message: string,
-    public readonly code: 'AUTH_REQUIRED' | 'AUTH_FAILED' | 'INVALID_SESSION' | 'UNKNOWN_ERROR',
-    public readonly redirectPath: string = '/auth/login'
-  ) {
-    super(message);
-    this.name = 'AuthError';
-  }
-}
+import { AuthError } from "@/lib/errors";
 
 /**
  * Centralized authentication utility for server actions
@@ -49,16 +33,14 @@ export async function ensureAuthenticated(
       console.error('Authentication error:', error);
       throw new AuthError(
         'Authentication check failed',
-        'AUTH_FAILED',
-        customRedirectPath || '/auth/login'
+        'login'
       );
     }
     
     if (!user || !session) {
       throw new AuthError(
         'Authentication required',
-        'AUTH_REQUIRED',
-        customRedirectPath || '/auth/login'
+        'session'
       );
     }
     
@@ -66,7 +48,7 @@ export async function ensureAuthenticated(
   } catch (error) {
     if (error instanceof AuthError) {
       if (redirectOnFailure) {
-        redirect(error.redirectPath);
+        redirect(customRedirectPath || error.redirectPath || '/auth/login');
       }
       throw error;
     }
@@ -75,12 +57,11 @@ export async function ensureAuthenticated(
     console.error('Unexpected authentication error:', error);
     const authError = new AuthError(
       'An unexpected authentication error occurred',
-      'UNKNOWN_ERROR',
-      customRedirectPath || '/auth/login'
+      'login'
     );
     
     if (redirectOnFailure) {
-      redirect(authError.redirectPath);
+      redirect(customRedirectPath || authError.redirectPath || '/auth/login');
     }
     throw authError;
   }
@@ -110,30 +91,5 @@ export async function getCurrentUser(
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;
-  }
-}
-
-/**
- * Validate user ownership of a resource
- * 
- * This utility helps ensure users can only access resources they own,
- * providing an additional security layer beyond RLS policies.
- * 
- * @param userId - ID of the user to validate
- * @param resourceOwnerId - ID of the resource owner
- * @param resourceType - Type of resource for better error messages
- * @throws AuthError if user doesn't own the resource
- */
-export function validateResourceOwnership(
-  userId: string,
-  resourceOwnerId: string,
-  resourceType: string = 'resource'
-): void {
-  if (userId !== resourceOwnerId) {
-    throw new AuthError(
-      `You don't have permission to access this ${resourceType}`,
-      'AUTH_REQUIRED',
-      '/polls'
-    );
   }
 }

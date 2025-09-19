@@ -1,8 +1,7 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { getSupabaseServerClient } from '@/lib/auth/server';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 
 interface FormState {
   success?: boolean;
@@ -15,7 +14,7 @@ export async function createPollAction(
   formData: FormData
 ): Promise<FormState> {
   try {
-    const supabase = createClient();
+    const supabase = await getSupabaseServerClient();
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -104,7 +103,7 @@ export async function voteAction(
   optionId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient();
+    const supabase = await getSupabaseServerClient();
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
