@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/auth/server";
 import { validatePollInput, checkRateLimit } from "@/lib/validation";
-import { validateCSRFToken } from "@/lib/csrf";
+import { validateCSRFTokenAction } from "@/lib/csrf-actions";
 import { ensureAuthenticated } from "@/lib/auth/actions";
 import { PollError, CSRFError, RateLimitError, ErrorHandler } from "@/lib/errors";
 
@@ -30,7 +30,7 @@ export async function createPollAction(formData: FormData) {
 
     // Step 2: Validate CSRF token (optional for backward compatibility)
     const csrfToken = formData.get('csrf_token') as string;
-    if (csrfToken && !(await validateCSRFToken(csrfToken))) {
+    if (csrfToken && !(await validateCSRFTokenAction(csrfToken))) {
       throw new CSRFError("Invalid CSRF token", "/polls/create");
     }
 
