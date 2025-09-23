@@ -20,10 +20,12 @@ export default function CreatePollPage() {
         </p>
       </div>
 
-      <div className="max-w-2xl">
-        <CSRFProvider>
-          <CreatePollForm />
-        </CSRFProvider>
+      <div className="flex justify-center">
+        <div className="w-full max-w-2xl">
+          <CSRFProvider>
+            <CreatePollForm />
+          </CSRFProvider>
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/lib/auth/server";
 import { validateVoteInput, checkRateLimit } from "@/lib/validation";
-import { validateCSRFToken } from "@/lib/csrf";
+import { validateCSRFTokenAction } from "@/lib/csrf-actions";
 
 /**
  * Custom error class for vote-related errors
@@ -57,35 +57,6 @@ async function ensureAuthenticated(supabase: Awaited<ReturnType<typeof getSupaba
  * @returns Promise that resolves when vote is successfully cast
  * @throws VoteError with VOTE_FAILED code if database operation fails
  */
-async function executeVote(
-  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
-  pollId: string,
-  optionId: string
-): Promise<void> {
-  const { error } = await supabase.rpc('cast_vote', {
-    p_poll_id: pollId,
-    p_option_id: optionId
-  });
-
-  if (error) {
-    // Log detailed error information for debugging
-    // This helps identify issues without exposing sensitive data to users
-    console.error('Database vote error:', {
-      pollId,
-      optionId,
-      error: error.message,
-      code: error.code,
-      details: error.details,
-      hint: error.hint
-    });
-    
-    throw new VoteError(
-      error.message || 'Failed to cast vote',
-      'VOTE_FAILED',
-      pollId
-    );
-  }
-}
 
 /**
  * Main vote action with comprehensive security and validation
@@ -109,7 +80,7 @@ export async function voteAction(pollId: string, optionId: string, csrfToken?: s
   try {
     // Step 1: Validate CSRF token if provided (optional for backward compatibility)
     // CSRF protection prevents cross-site request forgery attacks
-    if (csrfToken && !(await validateCSRFToken(csrfToken))) {
+    if (csrfToken && !(await validateCSRFTokenAction(csrfToken))) {
       throw new VoteError('Invalid CSRF token', 'INVALID_INPUT', pollId);
     }
     
@@ -127,15 +98,53 @@ export async function voteAction(pollId: string, optionId: string, csrfToken?: s
       throw new VoteError('Too many votes. Please wait before voting again.', 'RATE_LIMITED', pollId);
     }
     
-    // Step 5: Execute the vote
-    // Uses database function with built-in validation and constraints
-    await executeVote(supabase, pollId, optionId);
+    // Step 5: Validate that the option belongs to the poll
+    const { data: optionData, error: optionError } = await supabase
+      .from('poll_options')
+      .select('id, poll_id')
+      .eq('id', optionId)
+      .eq('poll_id', pollId)
+      .single();
+
+    if (optionError || !optionData) {
+      throw new VoteError('Invalid option for this poll', 'INVALID_INPUT', pollId);
+    }
+
+    // Step 6: Execute the vote
+    // Use upsert now that RLS policy is fixed
+    const { error: voteError } = await supabase
+      .from('votes')
+      .upsert({
+        poll_id: pollId,
+        option_id: optionId,
+        user_id: user.id,
+      }, {
+        onConflict: 'poll_id,user_id'
+      });
+
+    if (voteError) {
+      console.error('Vote upsert error:', {
+        pollId,
+        optionId,
+        userId: user.id,
+        error: voteError.message,
+        code: voteError.code,
+        details: voteError.details,
+        hint: voteError.hint
+      });
+      throw new VoteError(`Failed to record vote: ${voteError.message}`, 'VOTE_FAILED', pollId);
+    }
     
-    // Step 6: Redirect on success
+    // Step 7: Redirect on success
     // Show success message to user
     redirect(`/polls/${pollId}?voted=1`);
     
   } catch (error) {
+    // Handle NEXT_REDIRECT separately (this is expected behavior)
+    if (error instanceof Error && error.message === 'NEXT_REDIRECT') {
+      throw error; // Re-throw redirect errors
+    }
+    
     // Handle different error types appropriately
     if (error instanceof VoteError) {
       switch (error.code) {

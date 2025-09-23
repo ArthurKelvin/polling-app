@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/provider";
 import { Navigation } from "@/components/navigation";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#3b82f6" />
         <meta name="color-scheme" content="light dark" />
@@ -53,21 +54,28 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gray-50 text-gray-900`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
       >
-        <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            <Navigation />
-            <main className="flex-1" role="main">
-              {children}
-            </main>
-            <footer className="bg-white border-t border-gray-200 py-6 mt-auto">
-              <div className="container mx-auto px-4 text-center text-sm text-gray-600">
-                <p>&copy; 2025 Polling App. Built with Next.js and Supabase.</p>
-              </div>
-            </footer>
-          </div>
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthProvider>
+            <div className="min-h-screen flex flex-col">
+              <Navigation />
+              <main className="flex-1" role="main">
+                {children}
+              </main>
+              <footer className="bg-background border-t border-border py-6 mt-auto">
+                <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+                  <p>&copy; 2025 Polling App. Built with Next.js and Supabase.</p>
+                </div>
+              </footer>
+            </div>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

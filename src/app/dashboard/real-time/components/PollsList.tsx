@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { voteAction } from '../actions';
-import { CheckCircle, Users, Clock } from 'lucide-react';
+import { EditPollDialog } from '@/components/polls/EditPollDialog';
+import { DeletePollDialog } from '@/components/polls/DeletePollDialog';
+import { CheckCircle, Users, Clock, Edit, MoreVertical, Trash2 } from 'lucide-react';
 
 interface Poll {
   id: string;
@@ -16,7 +18,7 @@ interface Poll {
   created_at: string;
   poll_options: {
     id: string;
-    text: string;
+    label: string;
     votes: number;
   }[];
 }
@@ -27,6 +29,8 @@ interface PollsListProps {
 
 export function PollsList({ polls }: PollsListProps) {
   const [votedPolls, setVotedPolls] = useState<Set<string>>(new Set());
+  const [editingPoll, setEditingPoll] = useState<string | null>(null);
+  const [deletingPoll, setDeletingPoll] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleVote = async (pollId: string, optionId: string) => {
@@ -44,6 +48,23 @@ export function PollsList({ polls }: PollsListProps) {
         console.error('Vote failed:', result.error);
       }
     });
+  };
+
+  const handleEditPoll = (pollId: string) => {
+    setEditingPoll(pollId);
+  };
+
+  const handleEditSuccess = () => {
+    // The page will be revalidated by the server action
+    setEditingPoll(null);
+  };
+
+  const handleDeletePoll = (pollId: string) => {
+    setDeletingPoll(pollId);
+  };
+
+  const handleDeleteSuccess = () => {
+    setDeletingPoll(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -77,16 +98,38 @@ export function PollsList({ polls }: PollsListProps) {
         const totalVotes = poll.total_votes;
 
         return (
-          <Card key={poll.id} className="hover:shadow-lg transition-shadow">
+          <Card key={poll.id} className="group hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-xl mb-2">{poll.title}</CardTitle>
+                  <div className="flex items-center gap-2 mb-2">
+                    <CardTitle className="text-xl">{poll.title}</CardTitle>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditPoll(poll.id)}
+                        className="h-8 w-8 p-0"
+                        title="Edit poll"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeletePoll(poll.id)}
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        title="Delete poll"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                   {poll.description && (
-                    <p className="text-gray-600 mb-3">{poll.description}</p>
+                    <p className="text-muted-foreground mb-3">{poll.description}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="h-4 w-4" />
                   {formatDate(poll.created_at)}
                 </div>
@@ -115,7 +158,7 @@ export function PollsList({ polls }: PollsListProps) {
                     <div key={option.id} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-gray-700">
-                          {option.text}
+                          {option.label}
                         </span>
                         <span className="text-sm text-gray-500">
                           {option.votes} ({percentage.toFixed(1)}%)
@@ -148,6 +191,29 @@ export function PollsList({ polls }: PollsListProps) {
           </Card>
         );
       })}
+      
+      {/* Edit Poll Dialog */}
+      {editingPoll && (
+        <EditPollDialog
+          pollId={editingPoll}
+          currentTitle={polls.find(p => p.id === editingPoll)?.title || ''}
+          currentDescription={polls.find(p => p.id === editingPoll)?.description || ''}
+          isOpen={!!editingPoll}
+          onClose={() => setEditingPoll(null)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {/* Delete Poll Dialog */}
+      {deletingPoll && (
+        <DeletePollDialog
+          pollId={deletingPoll}
+          pollTitle={polls.find(p => p.id === deletingPoll)?.title || ''}
+          isOpen={!!deletingPoll}
+          onClose={() => setDeletingPoll(null)}
+          onSuccess={handleDeleteSuccess}
+        />
+      )}
     </div>
   );
 }

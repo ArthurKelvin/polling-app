@@ -19,7 +19,7 @@ interface VotePreventionExampleProps {
   pollDescription?: string;
   options: Array<{
     id: string;
-    text: string;
+    label: string;
     votes: number;
   }>;
   allowUpdate?: boolean;
@@ -142,7 +142,7 @@ export function VotePreventionExample({
               <div key={option.id} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-gray-700">
-                    {option.text}
+                    {option.label}
                     {isUserVotedOption && (
                       <Badge variant="outline" className="ml-2">
                         Your Vote

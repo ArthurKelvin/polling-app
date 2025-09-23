@@ -29,3 +29,4 @@ export async function validateCSRFTokenAction(token: string): Promise<boolean> {
   
   return storedToken === token;
 }
+

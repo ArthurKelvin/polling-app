@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { VoteForm } from './vote-form';
 import { PollResults } from './PollResults';
 import { QRCodeShare } from '@/components/polls/QRCodeShare';
+import { PollActions } from '@/components/polls/PollActions';
 import { getSupabaseServerClient } from '@/lib/auth/server';
 import { notFound } from 'next/navigation';
 import { Share2 } from 'lucide-react';
@@ -14,9 +15,10 @@ type PageProps = {
 };
 
 export default async function PollDetailPage({ params, searchParams }: PageProps) {
-  const { id } = params;
-  const hasVoted = searchParams.voted === '1';
-  const error = searchParams.error;
+  const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const hasVoted = resolvedSearchParams.voted === '1';
+  const error = resolvedSearchParams.error;
 
   const supabase = await getSupabaseServerClient();
 
@@ -51,15 +53,25 @@ export default async function PollDetailPage({ params, searchParams }: PageProps
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <Link href="/polls/list">
-            <Button variant="outline" size="sm">← Back to Polls</Button>
-          </Link>
-          <Link href={`/polls/${id}/share`}>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <Share2 className="h-4 w-4" />
-              Share Poll
-            </Button>
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/polls/list">
+              <Button variant="outline" size="sm">← Back to Polls</Button>
+            </Link>
+            <Link href={`/polls/${id}/share`}>
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Share2 className="h-4 w-4" />
+                Share Poll
+              </Button>
+            </Link>
+          </div>
+          {user && (
+            <PollActions
+              pollId={id}
+              pollTitle={poll.question}
+              pollDescription={poll.description}
+              isOwner={poll.owner_id === user.id}
+            />
+          )}
         </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Poll Detail</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">

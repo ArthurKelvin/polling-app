@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { QrCode, Share2, Copy, Download, Twitter, Facebook, Linkedin, MessageCircle, Mail } from 'lucide-react';
-import { generateQRCode, generateShareUrl, isValidUrl } from '@/lib/qr/generator';
+import { generateQRCode, generateShareUrl, isValidUrl, clearQRCodeCache } from '@/lib/qr/generator';
 import { 
   generateSocialShareData, 
   shareToTwitter, 
@@ -86,17 +86,31 @@ export function QRCodeShare({
   }, [updateState]);
 
   // QR Code generation with improved error handling
-  const generateQR = useCallback(async () => {
+  const generateQR = useCallback(async (clearCache = false) => {
+    console.log('QR Code generation called:', { clearCache, shareUrl });
+    
     if (!isValidUrl(shareUrl)) {
       updateState({ error: 'Invalid URL for QR code generation' });
       return;
+    }
+
+    // Clear cache if requested (for regeneration)
+    if (clearCache) {
+      console.log('Clearing QR code cache for URL:', shareUrl);
+      clearQRCodeCache(shareUrl);
     }
 
     setGenerating(true);
     resetError();
 
     try {
+      console.log('Generating QR code...');
       const qrResult = await generateQRCode(shareUrl, QR_CODE_CONFIG);
+      console.log('QR code generated:', { 
+        success: !!qrResult.dataUrl, 
+        fromCache: qrResult.fromCache,
+        cacheKey: qrResult.cacheKey 
+      });
       
       updateState({ qrCodeData: qrResult.dataUrl });
 
@@ -110,6 +124,7 @@ export function QRCodeShare({
       }).catch(console.error);
 
     } catch (err) {
+      console.error('QR code generation error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate QR code';
       updateState({ error: errorMessage });
     } finally {
@@ -240,7 +255,7 @@ function LinkShareSection({ shareUrl, isCopied, onCopy }: LinkShareSectionProps)
           type="text"
           value={shareUrl}
           readOnly
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-3 py-2 border border-input rounded-md bg-muted text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
         <Button
           onClick={onCopy}
@@ -259,7 +274,7 @@ function LinkShareSection({ shareUrl, isCopied, onCopy }: LinkShareSectionProps)
 interface QRCodeSectionProps {
   qrCodeData: string | null;
   isGenerating: boolean;
-  onGenerate: () => void;
+  onGenerate: (clearCache?: boolean) => void;
   onDownload: () => void;
 }
 
@@ -295,7 +310,7 @@ function QRCodeSection({ qrCodeData, isGenerating, onGenerate, onDownload }: QRC
               Download
             </Button>
             <Button
-              onClick={onGenerate}
+              onClick={() => onGenerate(true)}
               variant="outline"
               size="sm"
             >

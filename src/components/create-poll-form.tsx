@@ -37,8 +37,8 @@ export function CreatePollForm() {
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="mx-auto">
+      <CardHeader className="text-center">
         <CardTitle>Poll Details</CardTitle>
         <CardDescription>
           Fill in the details for your new poll
@@ -120,3 +120,4 @@ export function CreatePollForm() {
     </Card>
   );
 }
+

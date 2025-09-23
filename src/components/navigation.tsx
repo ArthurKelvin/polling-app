@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { LogoutButton } from '@/lib/auth/logout-button';
 import { useAuth } from '@/lib/auth/provider';
 import { useRoles } from '@/lib/auth/use-roles';
-import { Menu, X, Home, BarChart3, MessageCircle, Settings, Users } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { AdminAccessButton } from '@/components/admin/AdminAccessButton';
+import { Menu, X, Home, BarChart3, MessageCircle, Settings, Users, Shield } from 'lucide-react';
 
 /**
  * Navigation Component
@@ -32,7 +34,7 @@ export function Navigation() {
   // Loading state - show skeleton while checking authentication
   if (loading) {
     return (
-      <nav className="border-b bg-white shadow-sm" role="navigation" aria-label="Main navigation">
+      <nav className="border-b bg-background shadow-sm" role="navigation" aria-label="Main navigation">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/polls" className="text-xl font-bold text-gray-900">
@@ -49,17 +51,18 @@ export function Navigation() {
   // Unauthenticated state - show login/register buttons
   if (!user) {
     return (
-      <nav className="border-b bg-white shadow-sm" role="navigation" aria-label="Main navigation">
+      <nav className="border-b bg-background shadow-sm" role="navigation" aria-label="Main navigation">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link 
               href="/" 
-              className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors"
+              className="text-xl font-bold text-foreground hover:text-primary transition-colors"
               aria-label="Polling App - Home"
             >
               Polling App
             </Link>
             <div className="flex gap-2">
+              <ThemeToggle />
               <Link href="/auth/login">
                 <Button 
                   variant="outline" 
@@ -93,7 +96,7 @@ export function Navigation() {
           
           {/* Mobile menu for unauthenticated users */}
           {isMobileMenuOpen && (
-            <div className="sm:hidden mt-4 pb-4 border-t border-gray-200">
+            <div className="sm:hidden mt-4 pb-4 border-t border-border">
               <div className="flex flex-col gap-2 pt-4">
                 <Link href="/auth/login">
                   <Button variant="outline" className="w-full justify-start">
@@ -115,12 +118,12 @@ export function Navigation() {
 
   // Authenticated state - show user info and logout button
   return (
-    <nav className="border-b bg-white shadow-sm" role="navigation" aria-label="Main navigation">
+    <nav className="border-b bg-background shadow-sm" role="navigation" aria-label="Main navigation">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link 
             href="/polls" 
-            className="text-xl font-bold text-gray-900 hover:text-blue-600 transition-colors"
+            className="text-xl font-bold text-foreground hover:text-primary transition-colors"
             aria-label="Polling App - Home"
           >
             Polling App
@@ -142,18 +145,20 @@ export function Navigation() {
                 </Button>
               </Link>
               {isAdmin() && (
-                <Link href="/admin">
+                <Link href="/admin/dashboard">
                   <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
+                    <Shield className="h-4 w-4" />
                     Admin
                   </Button>
                 </Link>
               )}
             </div>
             
-            {/* User info and logout */}
-            <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-              <span className="text-sm text-gray-600 max-w-32 truncate" title={user.email}>
+            {/* User info, admin access, theme toggle, and logout */}
+            <div className="flex items-center gap-3 pl-4 border-l border-border">
+              <AdminAccessButton />
+              <ThemeToggle />
+              <span className="text-sm text-muted-foreground max-w-32 truncate" title={user.email}>
                 {user.email}
               </span>
               <LogoutButton />
@@ -162,7 +167,8 @@ export function Navigation() {
 
           {/* Mobile menu button for authenticated users */}
           <div className="md:hidden flex items-center gap-2">
-            <span className="text-sm text-gray-600 max-w-24 truncate" title={user.email}>
+            <ThemeToggle />
+            <span className="text-sm text-muted-foreground max-w-24 truncate" title={user.email}>
               {user.email}
             </span>
             <Button
@@ -198,14 +204,17 @@ export function Navigation() {
                 </Button>
               </Link>
               {isAdmin() && (
-                <Link href="/admin">
+                <Link href="/admin/dashboard">
                   <Button variant="ghost" className="w-full justify-start" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Users className="h-4 w-4 mr-2" />
+                    <Shield className="h-4 w-4 mr-2" />
                     Admin
                   </Button>
                 </Link>
               )}
               <div className="pt-2 border-t border-gray-200">
+                <div className="mb-2">
+                  <AdminAccessButton />
+                </div>
                 <LogoutButton />
               </div>
             </div>

@@ -13,7 +13,7 @@ interface Poll {
   created_at: string;
   poll_options: {
     id: string;
-    text: string;
+    label: string;
     votes: number;
   }[];
 }

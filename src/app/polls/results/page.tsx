@@ -3,36 +3,8 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export default function PollResultsPage() {
-  // Mock data for demonstration
-  const mockResults = [
-    {
-      id: 1,
-      title: "What's your favorite programming language?",
-      totalVotes: 156,
-      options: [
-        { name: "JavaScript", votes: 45, percentage: 28.8 },
-        { name: "Python", votes: 38, percentage: 24.4 },
-        { name: "Java", votes: 32, percentage: 20.5 },
-        { name: "C++", votes: 25, percentage: 16.0 },
-        { name: "Other", votes: 16, percentage: 10.3 }
-      ],
-      status: "closed",
-      createdAt: "2024-01-15"
-    },
-    {
-      id: 2,
-      title: "Best framework for web development?",
-      totalVotes: 89,
-      options: [
-        { name: "React", votes: 32, percentage: 36.0 },
-        { name: "Vue.js", votes: 28, percentage: 31.5 },
-        { name: "Angular", votes: 18, percentage: 20.2 },
-        { name: "Svelte", votes: 11, percentage: 12.4 }
-      ],
-      status: "active",
-      createdAt: "2024-01-10"
-    }
-  ];
+  // Mock data for demonstration - no polls
+  const mockResults: any[] = [];
 
   return (
     <div className="container mx-auto px-4 py-8">

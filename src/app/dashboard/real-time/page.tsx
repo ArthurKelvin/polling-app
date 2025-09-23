@@ -22,6 +22,27 @@ export const metadata: Metadata = {
 async function DashboardContent() {
   const supabase = await getSupabaseServerClient();
   
+  // Check if user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  
+  if (authError) {
+    console.error('Auth error in dashboard:', authError);
+    throw new Error(`Authentication error: ${authError.message}`);
+  }
+  
+  if (!user) {
+    throw new Error('User must be authenticated to access dashboard');
+  }
+
+  // Check user role
+  const { data: userRole, error: roleError } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', user.id)
+    .single();
+
+  const isAdmin = userRole?.role === 'admin';
+  
   // Fetch polls data on the server
   const { data: polls, error } = await supabase
     .from('polls')
@@ -29,20 +50,26 @@ async function DashboardContent() {
       *,
       poll_options (
         id,
-        text,
+        label,
         votes
       )
     `)
+    .eq('owner_id', user.id) // Only fetch user's own polls
     .order('created_at', { ascending: false });
 
   if (error) {
-    throw new Error('Failed to fetch polls');
+    console.error('Dashboard polls fetch error:', error);
+    // Instead of throwing, return empty polls array to prevent crash
+    console.warn('Falling back to empty polls array due to fetch error');
   }
+
+  const pollsData = polls || [];
 
   // Create a promise for real-time stats (not awaited - will stream)
   const statsPromise = supabase
     .from('polls')
     .select('id, total_votes')
+    .eq('owner_id', user.id) // Only count user's own polls
     .then(({ data }) => ({
       totalPolls: data?.length || 0,
       totalVotes: data?.reduce((sum, poll) => sum + (poll.total_votes || 0), 0) || 0,
@@ -56,11 +83,23 @@ async function DashboardContent() {
       
       <div className="container mx-auto px-4 py-8">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Real-time Polling Dashboard
-          </h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-4xl font-bold text-gray-900">
+              Real-time Polling Dashboard
+            </h1>
+            {isAdmin && (
+              <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                🔑 ADMIN
+              </div>
+            )}
+          </div>
           <p className="text-lg text-gray-600">
             Live updates powered by React 19 Server Components
+            {isAdmin && (
+              <span className="ml-2 text-sm text-red-600 font-medium">
+                (Admin privileges active)
+              </span>
+            )}
           </p>
         </header>
 
@@ -77,7 +116,7 @@ async function DashboardContent() {
 
           {/* Polls List with streaming */}
           <div className="lg:col-span-2">
-            <PollsStreamingProvider initialPolls={polls} />
+            <PollsStreamingProvider initialPolls={pollsData} />
           </div>
         </div>
       </div>

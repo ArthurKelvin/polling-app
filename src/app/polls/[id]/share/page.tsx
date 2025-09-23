@@ -59,11 +59,11 @@ export default async function PollSharePage({ params }: PageProps) {
             </Button>
           </Link>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Share2 className="h-8 w-8" />
           Share Poll
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
+        <p className="text-muted-foreground mt-2">
           Share this poll with others so they can vote
         </p>
       </div>
@@ -80,25 +80,25 @@ export default async function PollSharePage({ params }: PageProps) {
           <CardContent>
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <h3 className="text-lg font-semibold text-foreground">
                   {poll.question}
                 </h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Created {new Date(poll.created_at).toLocaleDateString()}
                 </p>
               </div>
               
               <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <p className="text-sm font-medium text-foreground">
                   Options:
                 </p>
                 <ul className="space-y-1">
                   {sortedOptions.map((option) => (
                     <li
                       key={option.id}
-                      className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2"
+                      className="text-sm text-muted-foreground flex items-center gap-2"
                     >
-                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                      <span className="w-2 h-2 bg-muted-foreground rounded-full"></span>
                       {option.label}
                     </li>
                   ))}
@@ -136,25 +136,25 @@ export default async function PollSharePage({ params }: PageProps) {
                 <span className="text-blue-600 font-bold">1</span>
               </div>
               <h3 className="font-semibold">Generate QR Code</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Click &quot;Generate QR Code&quot; to create a scannable code
               </p>
             </div>
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-green-600 font-bold">2</span>
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto">
+                <span className="text-green-600 dark:text-green-400 font-bold">2</span>
               </div>
               <h3 className="font-semibold">Share or Download</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Share the QR code or copy the link to share anywhere
               </p>
             </div>
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
-                <span className="text-purple-600 font-bold">3</span>
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mx-auto">
+                <span className="text-purple-600 dark:text-purple-400 font-bold">3</span>
               </div>
               <h3 className="font-semibold">Others Vote</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 People can scan the QR code or click the link to vote
               </p>
             </div>

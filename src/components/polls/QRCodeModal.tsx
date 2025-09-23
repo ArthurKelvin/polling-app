@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { X, Download, QrCode, Share2 } from 'lucide-react';
-import { generateQRCode, generateShareUrl, isValidUrl } from '@/lib/qr/generator';
+import { generateQRCode, generateShareUrl, isValidUrl, clearQRCodeCache } from '@/lib/qr/generator';
 import { trackQRCodeUsage } from '@/lib/qr/analytics';
 
 // Constants for better maintainability
@@ -50,10 +50,15 @@ export function QRCodeModal({
   }, []);
 
   // Generate QR code when modal opens
-  const generateQR = useCallback(async () => {
+  const generateQR = useCallback(async (clearCache = false) => {
     if (!isValidUrl(shareUrl)) {
       updateState({ error: 'Invalid URL for QR code generation' });
       return;
+    }
+
+    // Clear cache if requested (for regeneration)
+    if (clearCache) {
+      clearQRCodeCache(shareUrl);
     }
 
     updateState({ isGenerating: true, error: null });
@@ -128,8 +133,10 @@ export function QRCodeModal({
   }, [state.qrCodeData, pollId, updateState]);
 
   const handleRegenerate = useCallback(() => {
+    console.log('QR Code regeneration requested');
     updateState({ qrCodeData: null, error: null });
-    generateQR();
+    // Force regeneration by calling generateQR with clearCache=true
+    generateQR(true);
   }, [generateQR, updateState]);
 
   if (!isOpen) return null;

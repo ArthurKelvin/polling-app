@@ -7,6 +7,7 @@ import { getSupabaseServerClient } from '@/lib/auth/server';
 import { getCurrentUser } from '@/lib/auth/actions';
 import { getUserPollAnalytics, getRealTimeStats } from '@/lib/analytics';
 import { PollsDashboard } from '@/components/polls/PollsDashboard';
+import { AdminAccessBanner } from '@/components/admin/AdminAccessBanner';
 
 interface PollSummary {
   id: string;
@@ -97,6 +98,9 @@ export default async function PollsPage() {
           Create and manage your polls with real-time analytics
         </p>
       </div>
+
+      {/* Admin Access Banner */}
+      <AdminAccessBanner />
 
       <PollsDashboard 
         polls={polls}

@@ -185,3 +185,146 @@ export async function voteAction(
     };
   }
 }
+
+export async function editPollAction(
+  pollId: string,
+  newTitle: string,
+  newDescription?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await getSupabaseServerClient();
+
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'You must be logged in to edit polls',
+      };
+    }
+
+    // Validate input
+    if (!newTitle.trim()) {
+      return {
+        success: false,
+        error: 'Poll title is required',
+      };
+    }
+
+    // Check if user owns this poll
+    const { data: poll, error: pollError } = await supabase
+      .from('polls')
+      .select('owner_id')
+      .eq('id', pollId)
+      .single();
+
+    if (pollError || !poll) {
+      return {
+        success: false,
+        error: 'Poll not found',
+      };
+    }
+
+    if (poll.owner_id !== user.id) {
+      return {
+        success: false,
+        error: 'You can only edit your own polls',
+      };
+    }
+
+    // Update the poll
+    const { error: updateError } = await supabase
+      .from('polls')
+      .update({
+        question: newTitle.trim(),
+        description: newDescription?.trim() || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', pollId);
+
+    if (updateError) {
+      return {
+        success: false,
+        error: 'Failed to update poll: ' + updateError.message,
+      };
+    }
+
+    // Revalidate the dashboard page
+    revalidatePath('/dashboard/real-time');
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('Edit poll error:', error);
+    return {
+      success: false,
+      error: 'An unexpected error occurred',
+    };
+  }
+}
+
+export async function deletePollAction(
+  pollId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await getSupabaseServerClient();
+
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'You must be logged in to delete polls',
+      };
+    }
+
+    // Check if user owns this poll
+    const { data: poll, error: pollError } = await supabase
+      .from('polls')
+      .select('owner_id')
+      .eq('id', pollId)
+      .single();
+
+    if (pollError || !poll) {
+      return {
+        success: false,
+        error: 'Poll not found',
+      };
+    }
+
+    if (poll.owner_id !== user.id) {
+      return {
+        success: false,
+        error: 'You can only delete your own polls',
+      };
+    }
+
+    // Delete the poll (cascade will handle related records)
+    const { error: deleteError } = await supabase
+      .from('polls')
+      .delete()
+      .eq('id', pollId);
+
+    if (deleteError) {
+      return {
+        success: false,
+        error: 'Failed to delete poll: ' + deleteError.message,
+      };
+    }
+
+    // Revalidate the dashboard page
+    revalidatePath('/dashboard/real-time');
+    revalidatePath('/polls');
+
+    return { success: true };
+
+  } catch (error) {
+    console.error('Delete poll error:', error);
+    return {
+      success: false,
+      error: 'An unexpected error occurred',
+    };
+  }
+}

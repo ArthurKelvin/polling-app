@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { generateCSRFToken } from '@/lib/csrf';
+import { generateCSRFTokenAction } from '@/lib/csrf-actions';
 
 export async function GET() {
   try {
-    const token = await generateCSRFToken();
+    const token = await generateCSRFTokenAction();
     return NextResponse.json({ token });
   } catch (error) {
     console.error('CSRF token generation error:', error);

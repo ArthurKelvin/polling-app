@@ -23,6 +23,8 @@ export interface QRCodeResult {
   dataUrl: string;
   size: number;
   errorCorrectionLevel: string;
+  cacheKey?: string;
+  fromCache?: boolean;
 }
 
 export interface QRCodeCache {
@@ -54,7 +56,11 @@ export async function generateQRCode(
   
   // Check cache first
   if (qrCodeCache[cacheKey]) {
-    return qrCodeCache[cacheKey];
+    return {
+      ...qrCodeCache[cacheKey],
+      cacheKey,
+      fromCache: true
+    };
   }
 
   try {
@@ -72,11 +78,17 @@ export async function generateQRCode(
     const result: QRCodeResult = {
       dataUrl,
       size: mergedConfig.size,
-      errorCorrectionLevel: mergedConfig.errorCorrectionLevel
+      errorCorrectionLevel: mergedConfig.errorCorrectionLevel,
+      cacheKey,
+      fromCache: false
     };
 
-    // Cache the result
-    qrCodeCache[cacheKey] = result;
+    // Cache the result (without the cache metadata)
+    qrCodeCache[cacheKey] = {
+      dataUrl,
+      size: mergedConfig.size,
+      errorCorrectionLevel: mergedConfig.errorCorrectionLevel
+    };
     
     return result;
   } catch (error) {
@@ -170,7 +182,8 @@ export function generateShareUrl(
  */
 export function clearQRCodeCache(url?: string): void {
   if (url) {
-    const keys = Object.keys(qrCodeCache).filter(key => key.includes(url));
+    // Find keys that start with the URL followed by a dash (since cache key format is `${url}-${config}`)
+    const keys = Object.keys(qrCodeCache).filter(key => key.startsWith(`${url}-`));
     keys.forEach(key => delete qrCodeCache[key]);
   } else {
     Object.keys(qrCodeCache).forEach(key => delete qrCodeCache[key]);
