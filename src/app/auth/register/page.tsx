@@ -57,12 +57,12 @@ function RegisterForm() {
           <CheckCircle className="h-4 w-4" />
           <AlertTitle>Check your email!</AlertTitle>
           <AlertDescription className="mt-2">
-            We've sent a confirmation link to <strong>{registeredEmail}</strong>. 
+            We&apos;ve sent a confirmation link to <strong>{registeredEmail}</strong>. 
             Please check your email and click the link to verify your account before you can sign in.
           </AlertDescription>
           <div className="mt-4 flex items-center gap-2 text-sm">
             <Mail className="h-4 w-4" />
-            <span>Didn't receive the email? Check your spam folder or try again.</span>
+            <span>Didn&apos;t receive the email? Check your spam folder or try again.</span>
           </div>
           <div className="mt-4">
             <Button 

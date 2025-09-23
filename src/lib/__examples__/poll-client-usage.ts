@@ -101,8 +101,9 @@ export async function exampleCompletePollDisplay() {
     // Display options
     console.log('\nOptions:')
     poll.poll_options.forEach((option, index) => {
+      const votes = (option as any).votes ?? (option as any).votes_count ?? 0
       const percentage = poll.total_votes > 0 
-        ? (option.votes || 0) / poll.total_votes * 100 
+        ? votes / poll.total_votes * 100 
         : 0
       
       console.log(`${index + 1}. ${option.label} (${percentage.toFixed(1)}%)`)
@@ -181,13 +182,20 @@ export async function exampleRealTimePollMonitoring() {
         return
       }
 
+      // Ensure previousStats exists before comparing
+      if (!previousStats) {
+        previousStats = currentStats
+        return
+      }
+
       // Check if vote count changed
       if (currentStats.total_votes !== previousStats.total_votes) {
         console.log(`Vote count changed: ${previousStats.total_votes} → ${currentStats.total_votes}`)
         
         // Find which option gained votes
+        const prev = previousStats!
         currentStats.options.forEach(currentOption => {
-          const previousOption = previousStats.options.find(
+          const previousOption = prev.options.find(
             opt => opt.option_id === currentOption.option_id
           )
           

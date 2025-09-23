@@ -132,11 +132,11 @@ export function withPermission<P extends object>(
     const { hasPermission } = useRoles();
     
     if (hasPermission(requiredPermission)) {
-      return Component(props);
+      return React.createElement(Component as React.ComponentType<P>, props);
     }
-    
+
     if (fallback) {
-      return fallback(props);
+      return React.createElement(fallback as React.ComponentType<P>, props);
     }
     
     return null;

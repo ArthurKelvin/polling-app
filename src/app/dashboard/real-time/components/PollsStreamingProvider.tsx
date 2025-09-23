@@ -28,8 +28,16 @@ export function PollsStreamingProvider({ initialPolls }: PollsStreamingProviderP
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
  const supabase = getSupabaseClient();
 
+  type PollOptionUpdatePayload = {
+    new: { id: string; poll_id: string; votes: number };
+  };
+
+  type PollVoteUpdatePayload = {
+    new: { poll_id: string; total_votes: number };
+  };
+
   // Update poll data when receiving real-time updates
-  const handlePollUpdate = useCallback((payload: any) => {
+  const handlePollUpdate = useCallback((payload: PollOptionUpdatePayload) => {
     console.log('Received poll update:', payload);
     
     setPolls(prevPolls => {
@@ -54,7 +62,7 @@ export function PollsStreamingProvider({ initialPolls }: PollsStreamingProviderP
     });
   }, []);
 
-  const handlePollVoteUpdate = useCallback((payload: any) => {
+  const handlePollVoteUpdate = useCallback((payload: PollVoteUpdatePayload) => {
     console.log('Received vote update:', payload);
     
     setPolls(prevPolls => {

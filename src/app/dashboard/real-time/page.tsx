@@ -66,14 +66,16 @@ async function DashboardContent() {
   const pollsData = polls || [];
 
   // Create a promise for real-time stats (not awaited - will stream)
-  const statsPromise = supabase
-    .from('polls')
-    .select('id, total_votes')
-    .eq('owner_id', user.id) // Only count user's own polls
-    .then(({ data }) => ({
+  const statsPromise: Promise<{ totalPolls: number; totalVotes: number }> = (async () => {
+    const { data } = await supabase
+      .from('polls')
+      .select('id, total_votes')
+      .eq('owner_id', user.id);
+    return {
       totalPolls: data?.length || 0,
-      totalVotes: data?.reduce((sum, poll) => sum + (poll.total_votes || 0), 0) || 0,
-    }));
+      totalVotes: data?.reduce((sum: number, poll: { total_votes: number }) => sum + (poll.total_votes || 0), 0) || 0,
+    };
+  })();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

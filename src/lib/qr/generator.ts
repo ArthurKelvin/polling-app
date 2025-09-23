@@ -153,7 +153,7 @@ export function isValidUrl(url: string): boolean {
 
   try {
     const parsedUrl = new URL(url);
-    return ALLOWED_PROTOCOLS.includes(parsedUrl.protocol as any);
+    return (ALLOWED_PROTOCOLS as readonly string[]).includes(parsedUrl.protocol);
   } catch {
     return false;
   }

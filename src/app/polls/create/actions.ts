@@ -27,6 +27,9 @@ export async function createPollAction(formData: FormData) {
   try {
     // Step 1: Verify user authentication using centralized utility
     const { user } = await ensureAuthenticated(supabase);
+    if (!user) {
+      redirect('/auth/login');
+    }
 
     // Step 2: Validate CSRF token (optional for backward compatibility)
     const csrfToken = formData.get('csrf_token') as string;
@@ -35,7 +38,7 @@ export async function createPollAction(formData: FormData) {
     }
 
     // Step 3: Check rate limiting with enhanced system
-    const rateLimitResult = checkRateLimit(user.id, 'create_poll');
+    const rateLimitResult = checkRateLimit(user!.id, 'create_poll');
     if (!rateLimitResult.allowed) {
       throw new RateLimitError(
         `Too many polls created. Please wait ${Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)} seconds before creating another poll.`,
@@ -52,7 +55,7 @@ export async function createPollAction(formData: FormData) {
     const { data: poll, error: pollError } = await supabase
       .from("polls")
       .insert({
-        owner_id: user.id,
+        owner_id: user!.id,
         question,
         is_public: true,
       })

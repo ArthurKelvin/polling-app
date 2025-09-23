@@ -61,7 +61,7 @@ export function VotePreventionExample({
     
     const result = await vote(optionId, allowUpdate);
     
-    if (result.success) {
+    if (result && result.success) {
       // Refresh poll stats after successful vote
       const stats = await import('@/lib/vote-prevention').then(m => 
         m.getPollStats(pollId)
@@ -77,7 +77,7 @@ export function VotePreventionExample({
     
     const result = await updateVote(optionId);
     
-    if (result.success) {
+    if (result && result.success) {
       // Refresh poll stats after successful vote update
       const stats = await import('@/lib/vote-prevention').then(m => 
         m.getPollStats(pollId)
@@ -226,10 +226,10 @@ export function VotePreventionDemo() {
     title: 'What is your favorite programming language?',
     description: 'Choose the language you enjoy working with the most.',
     options: [
-      { id: 'opt-1', text: 'JavaScript/TypeScript', votes: 45 },
-      { id: 'opt-2', text: 'Python', votes: 32 },
-      { id: 'opt-3', text: 'Rust', votes: 18 },
-      { id: 'opt-4', text: 'Go', votes: 12 }
+      { id: 'opt-1', label: 'JavaScript/TypeScript', votes: 45 },
+      { id: 'opt-2', label: 'Python', votes: 32 },
+      { id: 'opt-3', label: 'Rust', votes: 18 },
+      { id: 'opt-4', label: 'Go', votes: 12 }
     ]
   };
 
@@ -256,10 +256,10 @@ export function VotePreventionDemo() {
             pollTitle="What is your preferred development environment?"
             pollDescription="You can change your vote if you change your mind."
             options={[
-              { id: 'env-1', text: 'VS Code', votes: 67 },
-              { id: 'env-2', text: 'IntelliJ IDEA', votes: 23 },
-              { id: 'env-3', text: 'Vim/Neovim', votes: 15 },
-              { id: 'env-4', text: 'Sublime Text', votes: 8 }
+              { id: 'env-1', label: 'VS Code', votes: 67 },
+              { id: 'env-2', label: 'IntelliJ IDEA', votes: 23 },
+              { id: 'env-3', label: 'Vim/Neovim', votes: 15 },
+              { id: 'env-4', label: 'Sublime Text', votes: 8 }
             ]}
             allowUpdate={true}
           />

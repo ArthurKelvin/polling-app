@@ -5,7 +5,7 @@ export { ensureAuthenticated, getCurrentUser } from './actions';
 export { validateResourceOwnership } from './utils';
 
 // Client utilities
-export { createSupabaseClient } from './client';
+export { getSupabaseClient } from './client';
 
 // Server utilities
 export { getSupabaseServerClient } from './server';

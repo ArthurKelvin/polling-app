@@ -67,7 +67,7 @@ export function AdminDashboard() {
     title: string; 
     value: number | string; 
     description: string; 
-    icon: any; 
+    icon: React.ComponentType<{ className?: string }>; 
     trend?: string;
   }) => (
     <Card>

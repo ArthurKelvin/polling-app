@@ -16,7 +16,7 @@ export async function getPollComments(
   offset: number = 0
 ): Promise<{ success: boolean; comments?: PollComment[]; error?: string }> {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     const { data, error } = await supabase
       .rpc('get_poll_comments', {
@@ -42,7 +42,7 @@ export async function getPollComments(
  */
 export async function getCommentReplies(commentId: string): Promise<{ success: boolean; replies?: CommentReply[]; error?: string }> {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     const { data, error } = await supabase
       .rpc('get_comment_replies', {
@@ -69,7 +69,7 @@ export async function createComment(
   commentData: CreateCommentData
 ): Promise<{ success: boolean; comment?: PollComment; error?: string }> {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     const { data, error } = await supabase
       .from('poll_comments')
@@ -126,7 +126,7 @@ export async function updateComment(
   content: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     // Check if user owns the comment
     const { data: comment, error: fetchError } = await supabase
@@ -171,7 +171,7 @@ export async function deleteComment(
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     const { data, error } = await supabase
       .rpc('soft_delete_comment', {
@@ -200,7 +200,7 @@ export async function deleteComment(
  */
 export async function getPollCommentCount(pollId: string): Promise<{ success: boolean; count?: number; error?: string }> {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     const { data, error } = await supabase
       .rpc('get_poll_comment_count', {
@@ -230,7 +230,7 @@ export async function getPollCommentsWithReplies(
     // Get main comments
     const commentsResult = await getPollComments(pollId, limit, 0);
     if (!commentsResult.success || !commentsResult.comments) {
-      return commentsResult;
+      return { success: commentsResult.success, error: commentsResult.error };
     }
 
     // Get replies for each comment

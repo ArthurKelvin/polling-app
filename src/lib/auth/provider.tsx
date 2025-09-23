@@ -18,7 +18,7 @@ type AuthContextValue = {
   /** Sign in with email and password */
   signInWithPassword: (params: { email: string; password: string }) => Promise<{ error?: Error | null }>;
   /** Register new user with email and password */
-  signUpWithPassword: (params: { email: string; password: string }) => Promise<{ error?: Error | null; data?: { user: any; session: any } | null; needsConfirmation?: boolean }>;
+  signUpWithPassword: (params: { email: string; password: string }) => Promise<{ error?: Error | null; data?: { user: User | null; session: Session | null } | null; needsConfirmation?: boolean }>;
   /** Sign out current user and clear session */
   signOut: () => Promise<void>;
   /** Send password reset email to user */
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const signInWithPassword = useCallback(async ({ email, password }: { email: string; password: string }) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    return { error: (error as unknown as Error) ?? null };
   }, [supabase]);
 
   /**
@@ -88,14 +88,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signUp({ email, password });
     
     if (error) {
-      return { error };
+      return { error: error as unknown as Error };
     }
     
-    // Check if user needs email confirmation
-    const needsConfirmation = data.user && !data.session;
+    // Check if user needs email confirmation (boolean)
+    const needsConfirmation: boolean = Boolean(data.user && !data.session);
     
     return { 
-      data, 
+      data: { user: data.user, session: data.session },
       needsConfirmation,
       error: null 
     };

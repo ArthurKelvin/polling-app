@@ -19,7 +19,7 @@ export abstract class AppError extends Error {
 
   constructor(
     message: string,
-    public readonly context?: Record<string, any>
+    public readonly context?: Record<string, unknown>
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -58,7 +58,7 @@ export class ValidationError extends AppError {
   constructor(
     message: string,
     public readonly field?: string,
-    public readonly value?: any,
+    public readonly value?: unknown,
     redirectPath?: string
   ) {
     super(message, { field, value });
@@ -191,7 +191,7 @@ export class ErrorHandler {
    * @param context - Additional context for error handling
    * @returns Object containing user message and redirect path
    */
-  static handle(error: unknown, context?: Record<string, any>): {
+  static handle(error: unknown, context?: Record<string, unknown>): {
     userMessage: string;
     redirectPath?: string;
     shouldLog: boolean;
@@ -221,7 +221,7 @@ export class ErrorHandler {
    * @param zodError - Zod validation error
    * @returns User-friendly error message
    */
-  static formatZodError(zodError: any): string {
+  static formatZodError(zodError: { errors?: Array<{ path: Array<string | number>; message: string }> }): string {
     if (zodError.errors && zodError.errors.length > 0) {
       const firstError = zodError.errors[0];
       return `${firstError.path.join('.')}: ${firstError.message}`;
@@ -235,7 +235,7 @@ export class ErrorHandler {
    * @param supabaseError - Supabase error object
    * @returns User-friendly error message
    */
-  static formatSupabaseError(supabaseError: any): string {
+  static formatSupabaseError(supabaseError: { code?: string; message?: string }): string {
     // Map common Supabase error codes to user-friendly messages
     const errorMessages: Record<string, string> = {
       '23505': 'This item already exists',
@@ -245,7 +245,8 @@ export class ErrorHandler {
       'PGRST301': 'Invalid request parameters'
     };
 
-    return errorMessages[supabaseError.code] || 
+    const code = supabaseError.code ?? '';
+    return (code && errorMessages[code]) || 
            supabaseError.message || 
            'A database error occurred';
   }

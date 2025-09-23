@@ -233,7 +233,14 @@ export async function canPerformAction(
 /**
  * Get all users with their roles (admin only)
  */
-export async function getAllUsersWithRoles(requesterId: string): Promise<{ success: boolean; users?: any[]; error?: string }> {
+type UserWithRole = {
+  user_id: string;
+  role: UserRole;
+  created_at: string;
+  updated_at: string;
+  auth: { users: { id: string; email: string; created_at: string } };
+};
+export async function getAllUsersWithRoles(requesterId: string): Promise<{ success: boolean; users?: UserWithRole[]; error?: string }> {
   try {
     // Check if requester is admin
     const hasAdminPermission = await hasPermission(requesterId, 'manage_users');
@@ -246,7 +253,7 @@ export async function getAllUsersWithRoles(requesterId: string): Promise<{ succe
     // Ensure supabase is awaited if getSupabaseServerClient is async
     const supabaseClient = await supabase;
 
-    const { data, error } = await supabaseClient
+    const result: any = await supabaseClient
       .from('user_roles')
       .select(`
         user_id,
@@ -259,14 +266,23 @@ export async function getAllUsersWithRoles(requesterId: string): Promise<{ succe
           created_at
         )
       `);
+    const { data, error } = result as { data: unknown; error: { message: string } | null };
 
     if (error) {
       console.error('Error getting users with roles:', error);
       return { success: false, error: error.message };
     }
 
-    return { success: true, users: data };
-  } catch (error) {
+    // Ensure data is an array and matches the expected type
+    if (!Array.isArray(data)) {
+      console.error('Data returned from Supabase is not an array:', data);
+      return { success: false, error: 'Invalid data format received from database' };
+    }
+
+    // Optionally, validate each user object structure here if needed
+
+    return { success: true, users: data as UserWithRole[] };
+  } catch (error: any) {
     console.error('Unexpected error getting users with roles:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }

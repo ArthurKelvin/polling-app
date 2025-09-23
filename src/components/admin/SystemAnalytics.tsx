@@ -102,7 +102,7 @@ export function SystemAnalytics() {
     title: string; 
     value: string | number; 
     change?: string; 
-    icon: any; 
+    icon: React.ComponentType<{ className?: string }>; 
   }) => (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

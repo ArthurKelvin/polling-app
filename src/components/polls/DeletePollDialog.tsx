@@ -59,7 +59,7 @@ export function DeletePollDialog({
             Delete Poll
           </DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete the poll <strong>"{pollTitle}"</strong>? 
+            Are you sure you want to delete the poll <strong>&quot;{pollTitle}&quot;</strong>? 
             This action cannot be undone and will permanently remove the poll and all its votes.
           </DialogDescription>
         </DialogHeader>

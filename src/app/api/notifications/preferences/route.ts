@@ -9,7 +9,7 @@ import { getSupabaseServerClient } from '@/lib/auth/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = await getSupabaseServerClient();
     
     // Get the current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -73,7 +73,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse request body
-    const { preferences }: { preferences: any } = await request.json();
+    type Preferences = {
+      emailNotifications?: unknown;
+      pollCreated?: unknown;
+      pollClosing?: unknown;
+      pollResults?: unknown;
+      newComments?: unknown;
+      closingReminderHours?: unknown;
+    };
+    const { preferences }: { preferences: Preferences } = await request.json();
 
     if (!preferences) {
       return NextResponse.json(
@@ -83,13 +91,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate preferences
+    const closingHoursRaw = preferences.closingReminderHours;
+    const closingHours = typeof closingHoursRaw === 'string' ? parseInt(closingHoursRaw, 10) : Number(closingHoursRaw);
     const validPreferences = {
       emailNotifications: Boolean(preferences.emailNotifications),
       pollCreated: Boolean(preferences.pollCreated),
       pollClosing: Boolean(preferences.pollClosing),
       pollResults: Boolean(preferences.pollResults),
       newComments: Boolean(preferences.newComments),
-      closingReminderHours: Math.max(1, Math.min(168, parseInt(preferences.closingReminderHours) || 24))
+      closingReminderHours: Math.max(1, Math.min(168, Number.isFinite(closingHours) ? closingHours : 24))
     };
 
     // Update user metadata with preferences

@@ -223,7 +223,7 @@ function CommentItem({
 
 export function PollComments({ pollId, pollTitle }: PollCommentsProps) {
   const { user } = useAuth();
-  const { canModerate } = useRoles();
+  const { hasPermission, isModerator, isAdmin } = useRoles();
   const [comments, setComments] = useState<PollComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -434,7 +434,7 @@ export function PollComments({ pollId, pollTitle }: PollCommentsProps) {
                 onEdit={() => {}} // TODO: Implement edit
                 onDelete={() => {}} // TODO: Implement delete
                 currentUserId={user?.id}
-                canModerate={canModerate()}
+                canModerate={isAdmin() || isModerator() || hasPermission('moderate_poll')}
               />
             ))}
           </div>

@@ -148,9 +148,7 @@ export async function voteAction(
 
     // Update option vote count
     const { error: optionError } = await supabase
-      .from('poll_options')
-      .update({ votes: supabase.raw('votes + 1') })
-      .eq('id', optionId);
+      .rpc('increment_option_votes', { option_uuid: optionId });
 
     if (optionError) {
       return {
@@ -161,9 +159,7 @@ export async function voteAction(
 
     // Update poll total votes
     const { error: pollError } = await supabase
-      .from('polls')
-      .update({ total_votes: supabase.raw('total_votes + 1') })
-      .eq('id', pollId);
+      .rpc('increment_poll_total_votes', { poll_uuid: pollId });
 
     if (pollError) {
       return {

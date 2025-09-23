@@ -17,25 +17,42 @@ interface PollSummary {
   isActive: boolean;
 }
 
+interface DashboardAnalytics {
+  pollId: string;
+  totalVotes: number;
+  recentVotes: number;
+  topOption: string;
+  isActive: boolean;
+}
+
 export default async function PollsPage() {
   const supabase = await getSupabaseServerClient();
   const user = await getCurrentUser(supabase);
 
   let polls: PollSummary[] = [];
-  let analytics: any[] = [];
-  let recentActivity: any[] = [];
+  type ActivityEntry = {
+    type: 'poll_created';
+    pollId: string;
+    question: string;
+    timestamp: string;
+    votes: number;
+  };
+  let analytics: DashboardAnalytics[] = [];
+  let recentActivity: ActivityEntry[] = [];
 
   if (user) {
     try {
       // Get user's polls
-      const { data: userPolls, error: pollsError } = await supabase
+      const baseQuery = supabase
         .from("polls")
         .select(`
           id,
           question,
           created_at
-        `)
-        .eq("owner_id", user.user.id)
+        `);
+      const { data: userPolls, error: pollsError } = await (user.user
+        ? baseQuery.eq("owner_id", user.user.id)
+        : baseQuery)
         .order("created_at", { ascending: false })
         .limit(10);
 
@@ -67,14 +84,25 @@ export default async function PollsPage() {
         // Get analytics for recent polls
         const recentPollIds = polls.slice(0, 5).map(p => p.id);
         const analyticsPromises = recentPollIds.map(id => getRealTimeStats(id));
-        const statsResults = await Promise.allSettled(analyticsPromises);
+        const statsResults = await Promise.allSettled(analyticsPromises as Promise<DashboardAnalytics extends { pollId: string } ? never : Promise<{
+          totalVotes: number;
+          recentVotes: number;
+          topOption: string;
+          isActive: boolean;
+        }>>[]);
         
-        analytics = statsResults
+        analytics = (statsResults
           .filter(result => result.status === 'fulfilled')
-          .map((result, index) => ({
-            pollId: recentPollIds[index],
-            ...(result as PromiseFulfilledResult<any>).value
-          }));
+          .map((result, index) => {
+            const value = (result as PromiseFulfilledResult<{ totalVotes: number; recentVotes: number; topOption: string; isActive: boolean; }>).value;
+            return {
+              pollId: recentPollIds[index],
+              totalVotes: value.totalVotes,
+              recentVotes: value.recentVotes,
+              topOption: value.topOption,
+              isActive: value.isActive,
+            } as DashboardAnalytics;
+          })) as DashboardAnalytics[];
 
         // Get recent activity (simplified)
         recentActivity = polls.slice(0, 5).map(poll => ({

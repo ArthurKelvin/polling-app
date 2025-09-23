@@ -31,6 +31,7 @@ export default async function PollDetailPage({ params, searchParams }: PageProps
     .select(`
       id,
       question,
+      description,
       owner_id,
       created_at,
       poll_options (
@@ -68,7 +69,7 @@ export default async function PollDetailPage({ params, searchParams }: PageProps
             <PollActions
               pollId={id}
               pollTitle={poll.question}
-              pollDescription={poll.description}
+              pollDescription={poll.description || ''}
               isOwner={poll.owner_id === user.id}
             />
           )}

@@ -25,7 +25,7 @@ export interface QRCodeAnalytics {
 export interface ShareAnalytics {
   pollId: string;
   action: 'qr_generated' | 'qr_scanned' | 'link_copied' | 'social_shared';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface AnalyticsEntry {
@@ -34,7 +34,7 @@ export interface AnalyticsEntry {
   timestamp: string;
   sessionId: string;
   userId: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // Debounced analytics tracking
@@ -197,7 +197,7 @@ export function clearAnalyticsData(type: 'qr' | 'share' = 'qr'): void {
  */
 function getSessionId(): string {
   try {
-    let sessionId = sessionStorage.getItem(STORAGE_KEYS.SESSION_ID);
+    const sessionId = sessionStorage.getItem(STORAGE_KEYS.SESSION_ID);
     let sessionData: { id: string; timestamp: number } | null = null;
     
     if (sessionId) {
@@ -275,8 +275,11 @@ export function getPollAnalyticsSummary(pollId: string): {
 
   // Count platform usage
   allData.forEach(item => {
-    if (item.metadata?.platform) {
-      summary.platforms[item.metadata.platform] = (summary.platforms[item.metadata.platform] || 0) + 1;
+    const platformRaw = item.metadata?.platform;
+    if (typeof platformRaw === 'string' && platformRaw.length > 0) {
+      const platformKey = platformRaw as string;
+      const current = summary.platforms[platformKey] ?? 0;
+      summary.platforms[platformKey] = current + 1;
     }
   });
 
@@ -290,7 +293,7 @@ export function getPollAnalyticsSummary(pollId: string): {
  */
 export async function exportAnalyticsData(type: 'qr' | 'share' | 'all' = 'all'): Promise<string> {
   try {
-    let data: { qr: AnalyticsEntry[]; share: AnalyticsEntry[] } = {
+    const data: { qr: AnalyticsEntry[]; share: AnalyticsEntry[] } = {
       qr: [],
       share: []
     };

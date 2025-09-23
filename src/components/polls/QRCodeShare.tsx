@@ -284,7 +284,7 @@ function QRCodeSection({ qrCodeData, isGenerating, onGenerate, onDownload }: QRC
       <label className="text-sm font-medium">QR Code</label>
       {!qrCodeData ? (
         <Button
-          onClick={onGenerate}
+          onClick={() => onGenerate()}
           disabled={isGenerating}
           className="w-full"
           variant="outline"

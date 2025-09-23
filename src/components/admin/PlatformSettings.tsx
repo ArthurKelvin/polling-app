@@ -97,7 +97,7 @@ export function PlatformSettings() {
     }
   };
 
-  const handleSettingChange = (key: keyof PlatformSettings, value: any) => {
+  const handleSettingChange = (key: keyof PlatformSettings, value: string | number | boolean) => {
     setSettings(prev => ({
       ...prev,
       [key]: value

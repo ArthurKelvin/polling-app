@@ -40,7 +40,13 @@ export function PollResultChart({ results, totalVotes }: PollResultChartProps) {
     color: COLORS[index % COLORS.length]
   }));
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  type TooltipPayloadItem = { value: number };
+  type TooltipProps = {
+    active?: boolean;
+    payload?: TooltipPayloadItem[];
+    label?: string;
+  };
+  const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">

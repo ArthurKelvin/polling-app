@@ -22,7 +22,7 @@ export async function ensureAuthenticated(
     redirectOnFailure?: boolean;
     customRedirectPath?: string;
   } = {}
-): Promise<{ user: any; session: any }> {
+): Promise<{ user: { id: string } | null; session: { access_token: string } | null }> {
   const { redirectOnFailure = true, customRedirectPath } = options;
   
   try {
@@ -44,7 +44,7 @@ export async function ensureAuthenticated(
       );
     }
     
-    return { user, session };
+    return { user: user as { id: string } | null, session: session as { access_token: string } | null };
   } catch (error) {
     if (error instanceof AuthError) {
       if (redirectOnFailure) {
@@ -78,7 +78,7 @@ export async function ensureAuthenticated(
  */
 export async function getCurrentUser(
   supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>
-): Promise<{ user: any; session: any } | null> {
+): Promise<{ user: { id: string } | null; session: { access_token: string } | null } | null> {
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     const { data: { session } } = await supabase.auth.getSession();
@@ -87,7 +87,7 @@ export async function getCurrentUser(
       return null;
     }
     
-    return { user, session };
+    return { user: user as { id: string } | null, session: session as { access_token: string } | null };
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;

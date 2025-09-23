@@ -26,7 +26,7 @@ export interface FormValidationResult {
  */
 export function validateFormData<T>(
   data: T,
-  schema: any
+  schema: { parse: (input: unknown) => unknown }
 ): FormValidationResult {
   const result: FormValidationResult = {
     isValid: true,
@@ -37,11 +37,12 @@ export function validateFormData<T>(
 
   try {
     schema.parse(data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     result.isValid = false;
     
-    if (error.errors) {
-      error.errors.forEach((err: any) => {
+    const zodErr = error as { errors?: Array<{ path: Array<string | number>; message: string; code?: string }> };
+    if (zodErr.errors) {
+      zodErr.errors.forEach((err) => {
         const field = err.path.join('.');
         result.errors[field] = err.message;
         
@@ -89,7 +90,7 @@ export function getFieldErrorMessage(field: string, error: string): string {
  * @param formData - Form data object
  * @returns Formatted string for display
  */
-export function formatFormDataForDisplay(formData: Record<string, any>): string {
+export function formatFormDataForDisplay(formData: Record<string, unknown>): string {
   const entries = Object.entries(formData)
     .filter(([_, value]) => value !== null && value !== undefined && value !== '')
     .map(([key, value]) => `${key}: ${value}`)
@@ -124,7 +125,7 @@ export function sanitizeFormInput(input: string): string {
  * @returns Summary string for logging
  */
 export function generateFormSubmissionSummary(
-  formData: Record<string, any>,
+  formData: Record<string, unknown>,
   validationResult: FormValidationResult
 ): string {
   const summary = {

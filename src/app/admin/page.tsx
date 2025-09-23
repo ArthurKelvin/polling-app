@@ -31,20 +31,8 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
 
-  // Check if user has admin permissions
-  if (!isAdmin()) {
-    return (
-      <div className="container mx-auto p-6">
-        <Alert className="border-red-200 bg-red-50 text-red-800">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Access Denied</AlertTitle>
-          <AlertDescription>
-            You don't have permission to access the admin dashboard.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
+  // Compute admin status (do not early-return before hooks)
+  const isAdminUser = isAdmin();
 
   // Fetch users with roles
   const fetchUsers = async () => {
@@ -153,6 +141,18 @@ export default function AdminDashboard() {
 
   return (
     <div className="container mx-auto p-6">
+      {!isAdminUser ? (
+        <div className="container mx-auto p-6">
+          <Alert className="border-red-200 bg-red-50 text-red-800">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Access Denied</AlertTitle>
+            <AlertDescription>
+              You don&apos;t have permission to access the admin dashboard.
+            </AlertDescription>
+          </Alert>
+        </div>
+      ) : (
+      <>
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
         <p className="text-gray-600">Manage user roles and permissions</p>
@@ -279,6 +279,8 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+      </>
+      )}
     </div>
   );
 }

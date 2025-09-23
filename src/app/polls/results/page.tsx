@@ -2,9 +2,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
+type MockOption = { name: string; votes: number; percentage: number };
+type MockPoll = {
+  id: string;
+  title: string;
+  totalVotes: number;
+  createdAt: string;
+  status: 'active' | 'closed';
+  options: MockOption[];
+};
+
 export default function PollResultsPage() {
   // Mock data for demonstration - no polls
-  const mockResults: any[] = [];
+  const mockResults: MockPoll[] = [];
 
   return (
     <div className="container mx-auto px-4 py-8">

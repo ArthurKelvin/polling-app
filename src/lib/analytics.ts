@@ -6,6 +6,7 @@
  */
 
 import { getSupabaseServerClient } from "@/lib/auth/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface PollAnalytics {
   pollId: string;
@@ -112,7 +113,8 @@ export async function getPollAnalytics(pollId: string): Promise<PollAnalytics> {
     }
 
     // Get vote counts for each option
-    const voteDistribution = [];
+    type OptionRow = { id: string; label: string; position: number };
+    const voteDistribution: Array<OptionRow & { votes: number }> = [];
     if (options && options.length > 0) {
       for (const option of options) {
         const { count: voteCount, error: voteCountError } = await supabase
@@ -151,7 +153,7 @@ export async function getPollAnalytics(pollId: string): Promise<PollAnalytics> {
 
     // Calculate vote distribution with percentages
     const distribution: VoteDistribution[] = voteDistribution?.map(option => {
-      const voteCount = option.votes?.[0]?.count || 0;
+      const voteCount = option.votes || 0;
       return {
         optionId: option.id,
         optionLabel: option.label,
@@ -167,13 +169,52 @@ export async function getPollAnalytics(pollId: string): Promise<PollAnalytics> {
     // Get timeline data
     const timeline = await getTimelineData(supabase, pollId);
 
+    // Derive simple performance metrics (placeholder calculations)
+    const averageVotesPerHour = timeline.length > 0
+      ? Math.round(
+          (timeline.reduce((sum, t) => sum + t.votes, 0) / Math.max(timeline.length, 1)) * 100
+        ) / 100
+      : 0;
+    const peakVotingHour = timeline.reduce((peak, t) => (t.votes > peak.votes ? t : peak), { hour: 0, votes: -1, timestamp: '', views: 0 }).hour;
+    const conversionRate = engagement.views > 0 ? Math.round((totalVotes / engagement.views) * 10000) / 100 : 0;
+    const performance: PerformanceMetrics = {
+      averageVotesPerHour,
+      peakVotingPeriod: `${peakVotingHour}:00`,
+      conversionRate,
+      bounceRate: engagement.bounceRate,
+      engagementScore: Math.round((conversionRate - engagement.bounceRate) + uniqueVoters) || 0,
+      viralCoefficient: uniqueVoters > 0 ? Math.round((totalVotes / uniqueVoters) * 100) / 100 : 0,
+    };
+
+    // Derive basic insights from distribution
+    const sortedByVotes = [...distribution].sort((a, b) => b.voteCount - a.voteCount);
+    const topPerformingOption = sortedByVotes[0]?.optionLabel || '';
+    const leastPopularOption = sortedByVotes[sortedByVotes.length - 1]?.optionLabel || '';
+    const votingPattern: PollInsights['votingPattern'] = totalVotes < 10 ? 'steady' : (performance.averageVotesPerHour > 5 ? 'burst' : 'linear');
+    const insights: PollInsights = {
+      topPerformingOption,
+      leastPopularOption,
+      votingPattern,
+      userRetentionRate: Math.min(100, Math.round((uniqueVoters / Math.max(totalVotes, 1)) * 100)),
+      recommendedActions: totalVotes === 0 ? [
+        'Promote your poll to get the first votes',
+        'Share the QR code on social media'
+      ] : [
+        'Share high-performing options',
+        'Encourage participation with reminders'
+      ],
+      trendAnalysis: totalVotes > 0 ? 'Votes are accumulating over time.' : 'No voting activity yet.'
+    };
+
     return {
       pollId,
       totalVotes,
       uniqueVoters,
       voteDistribution: distribution,
       engagement,
-      timeline
+      timeline,
+      performance,
+      insights
     };
 
   } catch (error) {
@@ -186,7 +227,7 @@ export async function getPollAnalytics(pollId: string): Promise<PollAnalytics> {
  * Calculate engagement metrics for a poll
  */
 async function calculateEngagementMetrics(
-  supabase: any,
+  _supabase: SupabaseClient,
   pollId: string,
   totalVotes: number
 ): Promise<EngagementMetrics> {
@@ -210,7 +251,7 @@ async function calculateEngagementMetrics(
 /**
  * Get timeline data for poll activity
  */
-async function getTimelineData(supabase: any, pollId: string): Promise<TimelineData[]> {
+async function getTimelineData(supabase: SupabaseClient, pollId: string): Promise<TimelineData[]> {
   // This is a simplified implementation
   // In a real application, you'd have proper view tracking
   
@@ -227,7 +268,7 @@ async function getTimelineData(supabase: any, pollId: string): Promise<TimelineD
   // Group votes by hour
   const hourlyData = new Map<number, { votes: number; views: number }>();
   
-  votes.forEach((vote: any) => {
+  votes.forEach((vote: { created_at: string }) => {
     const hour = new Date(vote.created_at).getHours();
     const current = hourlyData.get(hour) || { votes: 0, views: 0 };
     current.votes++;
